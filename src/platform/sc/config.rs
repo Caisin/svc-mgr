@@ -144,6 +144,8 @@ mod tests {
             autostart: true,
             restart_policy: crate::RestartPolicy::default(),
             contents: None,
+            stdout_file: None,
+            stderr_file: None,
         }
     }
 

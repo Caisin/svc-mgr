@@ -20,6 +20,8 @@ fn test_config() -> ServiceConfig {
             reset_after_secs: Some(60),
         },
         contents: None,
+        stdout_file: None,
+        stderr_file: None,
     }
 }
 
@@ -35,6 +37,8 @@ fn minimal_config() -> ServiceConfig {
         autostart: false,
         restart_policy: RestartPolicy::Never,
         contents: None,
+        stdout_file: None,
+        stderr_file: None,
     }
 }
 

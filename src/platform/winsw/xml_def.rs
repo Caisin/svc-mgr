@@ -14,6 +14,7 @@ pub struct WinSwXmlDef {
     pub reset_failure: Option<u32>,
     pub startmode: String,
     pub username: Option<String>,
+    pub log_path: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -94,6 +95,8 @@ impl WinSwXmlDef {
             reset_failure,
             startmode: startmode.to_string(),
             username: config.username.clone(),
+            log_path: config.stdout_file.as_ref()
+                .map(|p| p.parent().unwrap_or(p).to_string_lossy().into_owned()),
         }
     }
 
@@ -163,6 +166,10 @@ impl WinSwXmlDef {
         }
 
         write_element(&mut writer, "startmode", &self.startmode)?;
+
+        if let Some(log_path) = &self.log_path {
+            write_element(&mut writer, "logpath", log_path)?;
+        }
 
         if let Some(user) = &self.username {
             writer

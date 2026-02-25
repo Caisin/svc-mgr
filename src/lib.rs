@@ -71,6 +71,10 @@ pub struct ServiceConfig {
     pub description: Option<String>,
     pub autostart: bool,
     pub restart_policy: RestartPolicy,
+    /// Stdout log file path.
+    pub stdout_file: Option<PathBuf>,
+    /// Stderr log file path. If None and stdout_file is set, stderr goes to stdout_file too.
+    pub stderr_file: Option<PathBuf>,
     /// If set, use this raw content as the service file instead of generating one.
     pub contents: Option<String>,
 }

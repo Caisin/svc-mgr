@@ -8,6 +8,7 @@ pub struct RcdScript {
     pub command: String,
     pub pidfile: String,
     pub daemon_args: String,
+    pub stdout_file: Option<String>,
 }
 
 impl RcdScript {
@@ -20,11 +21,15 @@ impl RcdScript {
             .collect::<Vec<_>>()
             .join(" ");
 
+        let stdout_path = config.stdout_file.as_ref()
+            .map(|p| p.to_string_lossy().into_owned());
+
         Self {
             rcvar: format!("{}_enable", name),
             command: config.program.to_string_lossy().into_owned(),
             pidfile: format!("/var/run/{}.pid", name),
             daemon_args,
+            stdout_file: stdout_path,
             name,
         }
     }
@@ -41,14 +46,20 @@ impl RcdScript {
         out.push_str(&format!("command=\"{}\"\n", self.command));
         out.push_str(&format!("pidfile=\"{}\"\n", self.pidfile));
         if !self.daemon_args.is_empty() {
+            let log_flag = self.stdout_file.as_ref()
+                .map(|f| format!("-o {} ", f))
+                .unwrap_or_default();
             out.push_str(&format!(
-                "command_args=\"-p ${{pidfile}} {} {}\"\n",
-                self.command, self.daemon_args
+                "command_args=\"-p ${{pidfile}} {}{} {}\"\n",
+                log_flag, self.command, self.daemon_args
             ));
         } else {
+            let log_flag = self.stdout_file.as_ref()
+                .map(|f| format!("-o {} ", f))
+                .unwrap_or_default();
             out.push_str(&format!(
-                "command_args=\"-p ${{pidfile}} {}\"\n",
-                self.command
+                "command_args=\"-p ${{pidfile}} {}{}\"\n",
+                log_flag, self.command
             ));
         }
         out.push_str("command=\"/usr/sbin/daemon\"\n\n");
@@ -76,6 +87,8 @@ mod tests {
             autostart: false,
             restart_policy: crate::RestartPolicy::Never,
             contents: None,
+            stdout_file: None,
+            stderr_file: None,
         }
     }
 

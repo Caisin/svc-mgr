@@ -10,6 +10,8 @@ pub struct OpenRcScript {
     pub pidfile: String,
     pub command_background: bool,
     pub depend: Vec<String>,
+    pub output_log: Option<String>,
+    pub error_log: Option<String>,
 }
 
 impl OpenRcScript {
@@ -22,6 +24,11 @@ impl OpenRcScript {
             .collect::<Vec<_>>()
             .join(" ");
 
+        let stdout_path = config.stdout_file.as_ref()
+            .map(|p| p.to_string_lossy().into_owned());
+        let stderr_path = config.stderr_file.as_ref()
+            .map(|p| p.to_string_lossy().into_owned());
+
         Self {
             description: config
                 .description
@@ -32,6 +39,8 @@ impl OpenRcScript {
             pidfile: format!("/run/{}.pid", name),
             command_background: true,
             depend: vec![name.clone()],
+            output_log: stdout_path.clone(),
+            error_log: stderr_path.or(stdout_path),
             name,
         }
     }
@@ -47,6 +56,12 @@ impl OpenRcScript {
         out.push_str(&format!("pidfile=\"{}\"\n", self.pidfile));
         if self.command_background {
             out.push_str("command_background=true\n");
+        }
+        if let Some(path) = &self.output_log {
+            out.push_str(&format!("output_log=\"{}\"\n", path));
+        }
+        if let Some(path) = &self.error_log {
+            out.push_str(&format!("error_log=\"{}\"\n", path));
         }
         out.push('\n');
         out.push_str("depend() {\n");
@@ -76,6 +91,8 @@ mod tests {
             autostart: true,
             restart_policy: crate::RestartPolicy::default(),
             contents: None,
+            stdout_file: None,
+            stderr_file: None,
         }
     }
 

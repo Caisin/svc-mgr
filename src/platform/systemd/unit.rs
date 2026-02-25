@@ -23,6 +23,8 @@ pub struct ServiceSection {
     pub restart: Option<String>,
     pub restart_sec: Option<u32>,
     pub user: Option<String>,
+    pub standard_output: Option<String>,
+    pub standard_error: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -71,6 +73,11 @@ impl SystemdUnit {
             "multi-user.target"
         };
 
+        let stdout_path = config.stdout_file.as_ref()
+            .map(|p| format!("file:{}", p.to_string_lossy()));
+        let stderr_path = config.stderr_file.as_ref()
+            .map(|p| format!("file:{}", p.to_string_lossy()));
+
         Self {
             unit: UnitSection {
                 description: config.description.clone(),
@@ -87,6 +94,8 @@ impl SystemdUnit {
                 restart,
                 restart_sec: restart_sec,
                 user,
+                standard_output: stdout_path.clone(),
+                standard_error: stderr_path.or(stdout_path),
             },
             install: InstallSection {
                 wanted_by: wanted_by.to_string(),
@@ -128,6 +137,12 @@ impl SystemdUnit {
         }
         if let Some(user) = &self.service.user {
             out.push_str(&format!("User={}\n", user));
+        }
+        if let Some(stdout) = &self.service.standard_output {
+            out.push_str(&format!("StandardOutput={}\n", stdout));
+        }
+        if let Some(stderr) = &self.service.standard_error {
+            out.push_str(&format!("StandardError={}\n", stderr));
         }
 
         // [Install]

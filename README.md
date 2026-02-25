@@ -81,6 +81,8 @@ let config = ServiceConfig {
     autostart: true,
     restart_policy: RestartPolicy::Always { delay_secs: Some(5) },
     contents: None,
+    stdout_file: None,
+    stderr_file: None,
 };
 ```
 

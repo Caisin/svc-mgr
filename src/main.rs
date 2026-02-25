@@ -84,6 +84,15 @@ enum Commands {
         /// Maximum retry count (only for on-failure)
         #[arg(long)]
         max_retries: Option<u32>,
+        /// Log file path (stdout and stderr)
+        #[arg(long)]
+        log: Option<String>,
+        /// Stdout log file path (overrides --log for stdout)
+        #[arg(long)]
+        stdout_file: Option<String>,
+        /// Stderr log file path (overrides --log for stderr)
+        #[arg(long)]
+        stderr_file: Option<String>,
     },
     /// Uninstall a service
     Uninstall {
@@ -183,6 +192,9 @@ fn run(cli: Cli) -> svc_mgr::Result<()> {
             restart,
             restart_delay,
             max_retries,
+            log,
+            stdout_file,
+            stderr_file,
         } => {
             let policy = parse_restart_policy(&restart, restart_delay, max_retries);
             let mut builder = ServiceBuilder::new(&label)?
@@ -207,6 +219,18 @@ fn run(cli: Cli) -> svc_mgr::Result<()> {
             }
             if let Some(d) = description {
                 builder = builder.description(d);
+            }
+            // --log sets both; --stdout-file / --stderr-file override individually
+            match (log, stdout_file, stderr_file) {
+                (Some(l), None, None) => builder = builder.log(l),
+                (_, s_out, s_err) => {
+                    if let Some(f) = s_out {
+                        builder = builder.stdout_file(f);
+                    }
+                    if let Some(f) = s_err {
+                        builder = builder.stderr_file(f);
+                    }
+                }
             }
             let config = builder.build()?;
             let action = manager.install(&config)?;

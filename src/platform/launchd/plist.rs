@@ -13,6 +13,8 @@ pub struct LaunchdPlist {
     pub working_directory: Option<String>,
     pub environment_variables: BTreeMap<String, String>,
     pub disabled: bool,
+    pub standard_out_path: Option<String>,
+    pub standard_error_path: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -46,6 +48,11 @@ impl LaunchdPlist {
             env.insert(k.clone(), v.clone());
         }
 
+        let stdout_path = config.stdout_file.as_ref()
+            .map(|p| p.to_string_lossy().into_owned());
+        let stderr_path = config.stderr_file.as_ref()
+            .map(|p| p.to_string_lossy().into_owned());
+
         Self {
             label: config.label.to_qualified_name(),
             program_arguments,
@@ -58,6 +65,8 @@ impl LaunchdPlist {
                 .map(|p| p.to_string_lossy().into_owned()),
             environment_variables: env,
             disabled,
+            standard_out_path: stdout_path.clone(),
+            standard_error_path: stderr_path.or(stdout_path),
         }
     }
 
@@ -114,6 +123,13 @@ impl LaunchdPlist {
 
         if self.disabled {
             dict.insert("Disabled".into(), Value::Boolean(true));
+        }
+
+        if let Some(path) = &self.standard_out_path {
+            dict.insert("StandardOutPath".into(), Value::String(path.clone()));
+        }
+        if let Some(path) = &self.standard_error_path {
+            dict.insert("StandardErrorPath".into(), Value::String(path.clone()));
         }
 
         let mut buf = Vec::new();

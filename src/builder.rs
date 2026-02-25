@@ -15,6 +15,8 @@ pub struct ServiceBuilder {
     description: Option<String>,
     autostart: bool,
     restart_policy: RestartPolicy,
+    stdout_file: Option<PathBuf>,
+    stderr_file: Option<PathBuf>,
     contents: Option<String>,
 }
 
@@ -31,6 +33,8 @@ impl ServiceBuilder {
             description: None,
             autostart: false,
             restart_policy: RestartPolicy::default(),
+            stdout_file: None,
+            stderr_file: None,
             contents: None,
         })
     }
@@ -88,6 +92,26 @@ impl ServiceBuilder {
         self
     }
 
+    /// Set a single log file for both stdout and stderr.
+    pub fn log(mut self, path: impl Into<PathBuf>) -> Self {
+        let p = path.into();
+        self.stdout_file = Some(p);
+        self.stderr_file = None;
+        self
+    }
+
+    /// Set stdout log file path.
+    pub fn stdout_file(mut self, path: impl Into<PathBuf>) -> Self {
+        self.stdout_file = Some(path.into());
+        self
+    }
+
+    /// Set stderr log file path.
+    pub fn stderr_file(mut self, path: impl Into<PathBuf>) -> Self {
+        self.stderr_file = Some(path.into());
+        self
+    }
+
     pub fn contents(mut self, raw: impl Into<String>) -> Self {
         self.contents = Some(raw.into());
         self
@@ -108,6 +132,8 @@ impl ServiceBuilder {
             description: self.description,
             autostart: self.autostart,
             restart_policy: self.restart_policy,
+            stdout_file: self.stdout_file,
+            stderr_file: self.stderr_file,
             contents: self.contents,
         })
     }
