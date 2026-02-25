@@ -1,5 +1,5 @@
 [package]
-name = "kx-service"
+name = "svc-mgr"
 version = "0.1.0"
 edition = "2021"
 description = "Cross-platform service management library"
@@ -11,9 +11,15 @@ dirs = "6"
 log = "0.4"
 thiserror = "2"
 which = "7"
+clap = { version = "4", features = ["derive"] }
+env_logger = "0.11"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 plist = "1"
 
 [target.'cfg(target_os = "windows")'.dependencies]
 quick-xml = "0.37"
+
+[[bin]]
+name = "kxs"
+path = "src/main.rs"

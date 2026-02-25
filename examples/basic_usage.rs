@@ -2,12 +2,12 @@
 //!
 //! 运行: cargo run --example basic_usage
 
-use kx_service::{
+use svc_mgr::{
     ServiceBuilder, ServiceManagerKind, ServiceStatus,
     TypedServiceManager, ServiceManager, ActionOutput,
 };
 
-fn main() -> kx_service::Result<()> {
+fn main() -> svc_mgr::Result<()> {
     // 1. 使用 Builder 构建服务配置
     let config = ServiceBuilder::new("com.example.demo")?
         .program("/usr/local/bin/demo-server")
@@ -36,7 +36,7 @@ fn main() -> kx_service::Result<()> {
     // 3. 展示各平台生成的服务文件内容
     #[cfg(target_os = "linux")]
     {
-        use kx_service::platform::systemd::unit::SystemdUnit;
+        use svc_mgr::platform::systemd::unit::SystemdUnit;
         let unit = SystemdUnit::from_config(&config, false);
         println!("=== systemd unit file ===");
         println!("{}", unit.render());
@@ -44,7 +44,7 @@ fn main() -> kx_service::Result<()> {
 
     #[cfg(target_os = "macos")]
     {
-        use kx_service::platform::launchd::plist::LaunchdPlist;
+        use svc_mgr::platform::launchd::plist::LaunchdPlist;
         let plist = LaunchdPlist::from_config(&config);
         let data = plist.render()?;
         println!("=== launchd plist ===");

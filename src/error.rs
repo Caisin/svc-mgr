@@ -1,7 +1,7 @@
 use std::io;
 use std::path::PathBuf;
 
-/// All errors that can occur in kx-service.
+/// All errors that can occur in svc-mgr.
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error("I/O error: {0}")]

@@ -1,4 +1,4 @@
-# kx-service
+# svc-mgr
 
 跨平台服务管理库，支持 macOS (launchd)、Linux (systemd/openrc)、FreeBSD (rc.d)、Windows (sc.exe/winsw)。
 
@@ -17,15 +17,15 @@
 
 ```toml
 [dependencies]
-kx-service = { path = "." }
+svc-mgr = { path = "." }
 ```
 
 ### 使用 Builder API 安装服务
 
 ```rust
-use kx_service::{ServiceBuilder, ServiceManager, TypedServiceManager};
+use svc_mgr::{ServiceBuilder, ServiceManager, TypedServiceManager};
 
-fn main() -> kx_service::Result<()> {
+fn main() -> svc_mgr::Result<()> {
     // 构建服务配置
     let config = ServiceBuilder::new("com.example.myapp")?
         .program("/usr/bin/myapp")
@@ -68,7 +68,7 @@ fn main() -> kx_service::Result<()> {
 ```rust
 use std::ffi::OsString;
 use std::path::PathBuf;
-use kx_service::{ServiceConfig, ServiceLabel, RestartPolicy};
+use svc_mgr::{ServiceConfig, ServiceLabel, RestartPolicy};
 
 let config = ServiceConfig {
     label: "com.example.myapp".parse().unwrap(),
@@ -87,7 +87,7 @@ let config = ServiceConfig {
 ### 指定平台后端
 
 ```rust
-use kx_service::{ServiceManagerKind, TypedServiceManager};
+use svc_mgr::{ServiceManagerKind, TypedServiceManager};
 
 // 指定使用 systemd
 let manager = TypedServiceManager::target(ServiceManagerKind::Systemd);
@@ -99,7 +99,7 @@ let manager = TypedServiceManager::native()?;
 ### ServiceLabel 解析规则
 
 ```rust
-use kx_service::ServiceLabel;
+use svc_mgr::ServiceLabel;
 
 // 1 段: application only
 let label: ServiceLabel = "myapp".parse().unwrap();
@@ -121,7 +121,7 @@ assert_eq!(label.to_script_name(), "example-myapp");
 
 ```rust
 // systemd unit 文件生成
-use kx_service::platform::systemd::unit::SystemdUnit;
+use svc_mgr::platform::systemd::unit::SystemdUnit;
 
 let unit = SystemdUnit::from_config(&config, false);
 let content = unit.render();

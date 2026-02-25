@@ -1,4 +1,4 @@
-use kx_service::ServiceLabel;
+use svc_mgr::ServiceLabel;
 
 #[test]
 fn parse_single_token() {

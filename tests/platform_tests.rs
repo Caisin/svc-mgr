@@ -1,8 +1,8 @@
 use std::ffi::OsString;
 use std::path::PathBuf;
 
-use kx_service::RestartPolicy;
-use kx_service::ServiceConfig;
+use svc_mgr::RestartPolicy;
+use svc_mgr::ServiceConfig;
 
 fn test_config() -> ServiceConfig {
     ServiceConfig {
@@ -43,7 +43,7 @@ fn minimal_config() -> ServiceConfig {
 #[cfg(target_os = "linux")]
 mod systemd_tests {
     use super::*;
-    use kx_service::platform::systemd::unit::SystemdUnit;
+    use svc_mgr::platform::systemd::unit::SystemdUnit;
 
     #[test]
     fn render_full_unit() {
@@ -105,7 +105,7 @@ mod systemd_tests {
 #[cfg(target_os = "linux")]
 mod openrc_tests {
     use super::*;
-    use kx_service::platform::openrc::script::OpenRcScript;
+    use svc_mgr::platform::openrc::script::OpenRcScript;
 
     #[test]
     fn render_full_script() {
@@ -152,7 +152,7 @@ mod openrc_tests {
 ))]
 mod rcd_tests {
     use super::*;
-    use kx_service::platform::rcd::script::RcdScript;
+    use svc_mgr::platform::rcd::script::RcdScript;
 
     #[test]
     fn render_full_script() {
@@ -186,8 +186,8 @@ mod rcd_tests {
 #[cfg(target_os = "windows")]
 mod sc_tests {
     use super::*;
-    use kx_service::platform::sc::config::ScServiceConfig;
-    use kx_service::platform::sc::shell_escape;
+    use svc_mgr::platform::sc::config::ScServiceConfig;
+    use svc_mgr::platform::sc::shell_escape;
 
     #[test]
     fn sc_config_from_config() {
@@ -264,7 +264,7 @@ mod sc_tests {
 #[cfg(target_os = "macos")]
 mod launchd_tests {
     use super::*;
-    use kx_service::platform::launchd::plist::{KeepAlive, LaunchdPlist};
+    use svc_mgr::platform::launchd::plist::{KeepAlive, LaunchdPlist};
 
     #[test]
     fn plist_from_config_on_failure() {
@@ -363,7 +363,7 @@ mod launchd_tests {
 // ── kind ──
 
 mod kind_tests {
-    use kx_service::ServiceManagerKind;
+    use svc_mgr::ServiceManagerKind;
 
     #[test]
     fn native_returns_ok() {
@@ -413,7 +413,7 @@ mod config_tests {
 #[cfg(target_os = "macos")]
 mod commands_tests {
     use super::*;
-    use kx_service::{ServiceManager, TypedServiceManager};
+    use svc_mgr::{ServiceManager, TypedServiceManager};
 
     #[test]
     fn launchd_install_cmd() {
@@ -502,6 +502,6 @@ mod commands_tests {
         let output = manager.status(&label).unwrap().exec().unwrap();
         let status = output.into_status();
 
-        assert_eq!(status, kx_service::ServiceStatus::NotInstalled);
+        assert_eq!(status, svc_mgr::ServiceStatus::NotInstalled);
     }
 }

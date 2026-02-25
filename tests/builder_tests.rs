@@ -1,4 +1,4 @@
-use kx_service::{RestartPolicy, ServiceBuilder};
+use svc_mgr::{RestartPolicy, ServiceBuilder};
 
 #[test]
 fn builder_basic() {
