@@ -122,6 +122,13 @@ impl ServiceBuilder {
             crate::Error::InvalidLabel("program path is required".into())
         })?;
 
+        // Default log: {working_directory}/logs/{label}.log
+        let stdout_file = self.stdout_file.or_else(|| {
+            self.working_directory.as_ref().map(|wd| {
+                wd.join("logs").join(format!("{}.log", self.label.to_script_name()))
+            })
+        });
+
         Ok(ServiceConfig {
             label: self.label,
             program,
@@ -132,7 +139,7 @@ impl ServiceBuilder {
             description: self.description,
             autostart: self.autostart,
             restart_policy: self.restart_policy,
-            stdout_file: self.stdout_file,
+            stdout_file,
             stderr_file: self.stderr_file,
             contents: self.contents,
         })
