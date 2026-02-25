@@ -7,7 +7,7 @@ use svc_mgr::{
 };
 
 #[derive(Parser)]
-#[command(name = "svc", about = "Cross-platform service management CLI")]
+#[command(name = "rsvc", about = "Cross-platform service management CLI")]
 struct Cli {
     /// Manage user-level services instead of system-level
     #[arg(long, global = true)]
