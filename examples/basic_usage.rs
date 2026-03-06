@@ -58,7 +58,7 @@ fn main() -> svc_mgr::Result<()> {
 
     // 查询一个不存在的服务状态
     let label = "com.example.nonexistent".parse()?;
-    let status = manager.status(&label)?.exec()?.into_status();
+    let status = manager.status(&label)?.exec()?.into_status()?;
     match status {
         ServiceStatus::NotInstalled => {
             println!("Service 'com.example.nonexistent': not installed (expected)")

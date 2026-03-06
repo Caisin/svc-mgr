@@ -25,7 +25,7 @@ struct Cli {
     command: Commands,
 }
 
-#[derive(Clone, ValueEnum)]
+#[derive(Clone, Copy, ValueEnum)]
 enum Backend {
     Launchd,
     Systemd,
@@ -36,8 +36,8 @@ enum Backend {
 }
 
 impl From<Backend> for ServiceManagerKind {
-    fn from(b: Backend) -> Self {
-        match b {
+    fn from(backend: Backend) -> Self {
+        match backend {
             Backend::Launchd => Self::Launchd,
             Backend::Systemd => Self::Systemd,
             Backend::Openrc => Self::OpenRc,
@@ -48,7 +48,16 @@ impl From<Backend> for ServiceManagerKind {
     }
 }
 
+#[derive(Clone, Copy, ValueEnum)]
+enum RestartArg {
+    Never,
+    Always,
+    OnFailure,
+    OnSuccess,
+}
+
 #[derive(Subcommand)]
+#[allow(clippy::large_enum_variant)]
 enum Commands {
     /// Install a new service
     Install {
@@ -76,8 +85,8 @@ enum Commands {
         #[arg(long)]
         autostart: bool,
         /// Restart policy: never, always, on-failure, on-success
-        #[arg(long, default_value = "on-failure")]
-        restart: String,
+        #[arg(long, value_enum, default_value_t = RestartArg::OnFailure)]
+        restart: RestartArg,
         /// Delay in seconds before restart
         #[arg(long)]
         restart_delay: Option<u32>,
@@ -124,27 +133,19 @@ enum Commands {
 }
 
 fn parse_restart_policy(
-    restart: &str,
+    restart: RestartArg,
     delay: Option<u32>,
     max_retries: Option<u32>,
 ) -> RestartPolicy {
     match restart {
-        "never" => RestartPolicy::Never,
-        "always" => RestartPolicy::Always {
-            delay_secs: delay,
-        },
-        "on-failure" => RestartPolicy::OnFailure {
+        RestartArg::Never => RestartPolicy::Never,
+        RestartArg::Always => RestartPolicy::Always { delay_secs: delay },
+        RestartArg::OnFailure => RestartPolicy::OnFailure {
             delay_secs: delay,
             max_retries,
             reset_after_secs: None,
         },
-        "on-success" => RestartPolicy::OnSuccess {
-            delay_secs: delay,
-        },
-        other => {
-            eprintln!("Unknown restart policy: {other}, using default (on-failure)");
-            RestartPolicy::default()
-        }
+        RestartArg::OnSuccess => RestartPolicy::OnSuccess { delay_secs: delay },
     }
 }
 
@@ -163,15 +164,15 @@ fn main() {
     env_logger::init();
     let cli = Cli::parse();
 
-    if let Err(e) = run(cli) {
-        eprintln!("Error: {e}");
+    if let Err(err) = run(cli) {
+        eprintln!("Error: {err}");
         process::exit(1);
     }
 }
 
 fn run(cli: Cli) -> svc_mgr::Result<()> {
     let mut manager = match cli.backend {
-        Some(b) => TypedServiceManager::target(b.into()),
+        Some(backend) => TypedServiceManager::target(backend.into())?,
         None => TypedServiceManager::native()?,
     };
 
@@ -196,7 +197,7 @@ fn run(cli: Cli) -> svc_mgr::Result<()> {
             stdout_file,
             stderr_file,
         } => {
-            let policy = parse_restart_policy(&restart, restart_delay, max_retries);
+            let policy = parse_restart_policy(restart, restart_delay, max_retries);
             let mut builder = ServiceBuilder::new(&label)?
                 .program(program)
                 .autostart(autostart)
@@ -208,27 +209,26 @@ fn run(cli: Cli) -> svc_mgr::Result<()> {
                 builder = builder.working_directory(dir);
             }
             for kv in env {
-                if let Some((k, v)) = kv.split_once('=') {
-                    builder = builder.env(k, v);
+                if let Some((key, value)) = kv.split_once('=') {
+                    builder = builder.env(key, value);
                 } else {
                     eprintln!("Ignoring invalid env var (expected KEY=VALUE): {kv}");
                 }
             }
-            if let Some(u) = username {
-                builder = builder.username(u);
+            if let Some(user) = username {
+                builder = builder.username(user);
             }
-            if let Some(d) = description {
-                builder = builder.description(d);
+            if let Some(desc) = description {
+                builder = builder.description(desc);
             }
-            // --log sets both; --stdout-file / --stderr-file override individually
             match (log, stdout_file, stderr_file) {
-                (Some(l), None, None) => builder = builder.log(l),
-                (_, s_out, s_err) => {
-                    if let Some(f) = s_out {
-                        builder = builder.stdout_file(f);
+                (Some(path), None, None) => builder = builder.log(path),
+                (_, stdout_path, stderr_path) => {
+                    if let Some(path) = stdout_path {
+                        builder = builder.stdout_file(path);
                     }
-                    if let Some(f) = s_err {
-                        builder = builder.stderr_file(f);
+                    if let Some(path) = stderr_path {
+                        builder = builder.stderr_file(path);
                     }
                 }
             }
@@ -257,10 +257,10 @@ fn run(cli: Cli) -> svc_mgr::Result<()> {
             let action = manager.status(&label)?;
             let output = run_action(action, cli.dry_run)?;
             if !cli.dry_run {
-                match output.into_status() {
+                match output.into_status()? {
                     ServiceStatus::Running => println!("Running"),
                     ServiceStatus::Stopped(reason) => match reason {
-                        Some(msg) => println!("Stopped: {msg}"),
+                        Some(message) => println!("Stopped: {message}"),
                         None => println!("Stopped"),
                     },
                     ServiceStatus::NotInstalled => println!("Not installed"),
@@ -271,7 +271,7 @@ fn run(cli: Cli) -> svc_mgr::Result<()> {
             let action = manager.list()?;
             let output = run_action(action, cli.dry_run)?;
             if !cli.dry_run {
-                for name in output.into_list() {
+                for name in output.into_list()? {
                     println!("{name}");
                 }
             }
@@ -279,4 +279,24 @@ fn run(cli: Cli) -> svc_mgr::Result<()> {
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn invalid_restart_policy_is_rejected() {
+        let cli = Cli::try_parse_from([
+            "rsvc",
+            "install",
+            "com.example.myapp",
+            "--program",
+            "/usr/bin/myapp",
+            "--restart",
+            "bogus",
+        ]);
+
+        assert!(cli.is_err());
+    }
 }

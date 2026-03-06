@@ -9,14 +9,18 @@ homepage = "https://github.com/Caisin/svc-mgr"
 keywords = ["service", "daemon", "launchd", "systemd", "cross-platform"]
 categories = ["os", "config"]
 
+[features]
+default = []
+cli = ["dep:clap", "dep:env_logger"]
+
 [dependencies]
 cfg-if = "1"
 dirs = "6"
 log = "0.4"
 thiserror = "2"
 which = "7"
-clap = { version = "4", features = ["derive"] }
-env_logger = "0.11"
+clap = { version = "4", features = ["derive"], optional = true }
+env_logger = { version = "0.11", optional = true }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 plist = "1"
@@ -27,3 +31,4 @@ quick-xml = "0.37"
 [[bin]]
 name = "rsvc"
 path = "src/main.rs"
+required-features = ["cli"]
