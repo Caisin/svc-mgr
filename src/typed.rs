@@ -1,7 +1,7 @@
 use crate::action::ServiceAction;
 use crate::error::Result;
 use crate::kind::ServiceManagerKind;
-use crate::{ServiceConfig, ServiceLabel, ServiceLevel, ServiceManager};
+use crate::{Error, ServiceConfig, ServiceLabel, ServiceLevel, ServiceManager};
 
 /// A service manager that dispatches to the appropriate platform backend.
 pub enum TypedServiceManager {
@@ -31,19 +31,19 @@ pub enum TypedServiceManager {
 
 impl TypedServiceManager {
     /// Create a manager for the given kind.
-    pub fn target(kind: ServiceManagerKind) -> Self {
+    pub fn target(kind: ServiceManagerKind) -> Result<Self> {
         match kind {
             #[cfg(target_os = "macos")]
-            ServiceManagerKind::Launchd => {
-                Self::Launchd(crate::platform::launchd::LaunchdServiceManager::system())
-            }
+            ServiceManagerKind::Launchd => Ok(Self::Launchd(
+                crate::platform::launchd::LaunchdServiceManager::system(),
+            )),
             #[cfg(target_os = "linux")]
-            ServiceManagerKind::Systemd => {
-                Self::Systemd(crate::platform::systemd::SystemdServiceManager::system())
-            }
+            ServiceManagerKind::Systemd => Ok(Self::Systemd(
+                crate::platform::systemd::SystemdServiceManager::system(),
+            )),
             #[cfg(target_os = "linux")]
             ServiceManagerKind::OpenRc => {
-                Self::OpenRc(crate::platform::openrc::OpenRcServiceManager::new())
+                Ok(Self::OpenRc(crate::platform::openrc::OpenRcServiceManager::new()))
             }
             #[cfg(any(
                 target_os = "freebsd",
@@ -52,27 +52,26 @@ impl TypedServiceManager {
                 target_os = "netbsd"
             ))]
             ServiceManagerKind::Rcd => {
-                Self::Rcd(crate::platform::rcd::RcdServiceManager::new())
+                Ok(Self::Rcd(crate::platform::rcd::RcdServiceManager::new()))
             }
             #[cfg(target_os = "windows")]
             ServiceManagerKind::Sc => {
-                Self::Sc(crate::platform::sc::ScServiceManager::new())
+                Ok(Self::Sc(crate::platform::sc::ScServiceManager::new()))
             }
             #[cfg(target_os = "windows")]
-            ServiceManagerKind::WinSw => {
-                Self::WinSw(crate::platform::winsw::WinSwServiceManager::new())
-            }
-            #[allow(unreachable_patterns)]
-            _ => panic!(
-                "Service manager kind {:?} is not supported on this platform",
+            ServiceManagerKind::WinSw => Ok(Self::WinSw(
+                crate::platform::winsw::WinSwServiceManager::new(),
+            )),
+            _ => Err(Error::Unsupported(format!(
+                "service manager kind {:?} is not supported on this platform",
                 kind
-            ),
+            ))),
         }
     }
 
     /// Create a manager for the native platform.
     pub fn native() -> Result<Self> {
-        ServiceManagerKind::native().map(Self::target)
+        ServiceManagerKind::native().and_then(Self::target)
     }
 }
 

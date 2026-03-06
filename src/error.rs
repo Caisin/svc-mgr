@@ -10,6 +10,15 @@ pub enum Error {
     #[error("invalid service label: {0}")]
     InvalidLabel(String),
 
+    #[error("invalid service config: {0}")]
+    InvalidConfig(String),
+
+    #[error("unexpected action output: expected {expected}, got {actual}")]
+    UnexpectedActionOutput {
+        expected: &'static str,
+        actual: &'static str,
+    },
+
     #[error("command `{command}` failed (exit code {code}): {message}")]
     CommandFailed {
         command: String,

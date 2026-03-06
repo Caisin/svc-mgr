@@ -2,7 +2,7 @@ use std::ffi::OsString;
 use std::path::PathBuf;
 
 use crate::error::Result;
-use crate::{RestartPolicy, ServiceConfig, ServiceLabel};
+use crate::{Error, RestartPolicy, ServiceConfig, ServiceLabel};
 
 /// Fluent builder for constructing a [`ServiceConfig`].
 pub struct ServiceBuilder {
@@ -94,9 +94,9 @@ impl ServiceBuilder {
 
     /// Set a single log file for both stdout and stderr.
     pub fn log(mut self, path: impl Into<PathBuf>) -> Self {
-        let p = path.into();
-        self.stdout_file = Some(p);
-        self.stderr_file = None;
+        let path = path.into();
+        self.stdout_file = Some(path.clone());
+        self.stderr_file = Some(path);
         self
     }
 
@@ -118,15 +118,14 @@ impl ServiceBuilder {
     }
 
     pub fn build(self) -> Result<ServiceConfig> {
-        let program = self.program.ok_or_else(|| {
-            crate::Error::InvalidLabel("program path is required".into())
-        })?;
+        let program = self
+            .program
+            .ok_or_else(|| Error::InvalidConfig("program path is required".into()))?;
 
-        // Default log: {working_directory}/logs/{label}.log
         let stdout_file = self.stdout_file.or_else(|| {
-            self.working_directory.as_ref().map(|wd| {
-                wd.join("logs").join(format!("{}.log", self.label.to_script_name()))
-            })
+            self.working_directory
+                .as_ref()
+                .map(|wd| wd.join("logs").join(format!("{}.log", self.label.to_script_name())))
         });
 
         Ok(ServiceConfig {

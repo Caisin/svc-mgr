@@ -17,6 +17,11 @@ pub enum ActionStep {
     },
     /// Remove a file if it exists.
     RemoveFile { path: PathBuf },
+    /// Read directory entries at execution time.
+    ReadDir {
+        path: PathBuf,
+        extension: Option<String>,
+    },
     /// Run a command, fail on non-zero exit.
     Cmd {
         program: String,
@@ -34,12 +39,12 @@ impl fmt::Display for ActionStep {
         match self {
             Self::WriteFile { path, .. } => write!(f, "# write file: {}", path.display()),
             Self::RemoveFile { path } => write!(f, "rm {}", path.display()),
+            Self::ReadDir { path, extension } => match extension {
+                Some(extension) => write!(f, "# list dir: {} (*.{extension})", path.display()),
+                None => write!(f, "# list dir: {}", path.display()),
+            },
             Self::Cmd { program, args } | Self::CmdIgnoreError { program, args } => {
-                write!(f, "{}", program)?;
-                for arg in args {
-                    write!(f, " {}", arg)?;
-                }
-                Ok(())
+                write!(f, "{}", utils::format_command_preview(program, args))
             }
         }
     }
@@ -54,11 +59,11 @@ pub struct CmdOutput {
 }
 
 impl From<Output> for CmdOutput {
-    fn from(o: Output) -> Self {
+    fn from(output: Output) -> Self {
         Self {
-            exit_code: o.status.code(),
-            stdout: String::from_utf8_lossy(&o.stdout).to_string(),
-            stderr: String::from_utf8_lossy(&o.stderr).to_string(),
+            exit_code: output.status.code(),
+            stdout: String::from_utf8_lossy(&output.stdout).to_string(),
+            stderr: String::from_utf8_lossy(&output.stderr).to_string(),
         }
     }
 }
@@ -75,19 +80,33 @@ pub enum ActionOutput {
 }
 
 impl ActionOutput {
-    /// Extract ServiceStatus, panics if not a Status variant.
-    pub fn into_status(self) -> ServiceStatus {
+    /// Extract ServiceStatus.
+    pub fn into_status(self) -> Result<ServiceStatus> {
         match self {
-            Self::Status(s) => s,
-            _ => panic!("ActionOutput is not Status"),
+            Self::Status(status) => Ok(status),
+            Self::None => Err(Error::UnexpectedActionOutput {
+                expected: "Status",
+                actual: "None",
+            }),
+            Self::List(_) => Err(Error::UnexpectedActionOutput {
+                expected: "Status",
+                actual: "List",
+            }),
         }
     }
 
-    /// Extract service list, panics if not a List variant.
-    pub fn into_list(self) -> Vec<String> {
+    /// Extract service list.
+    pub fn into_list(self) -> Result<Vec<String>> {
         match self {
-            Self::List(l) => l,
-            _ => panic!("ActionOutput is not List"),
+            Self::List(list) => Ok(list),
+            Self::None => Err(Error::UnexpectedActionOutput {
+                expected: "List",
+                actual: "None",
+            }),
+            Self::Status(_) => Err(Error::UnexpectedActionOutput {
+                expected: "List",
+                actual: "Status",
+            }),
         }
     }
 }
@@ -120,7 +139,12 @@ impl ServiceAction {
         }
     }
 
-    pub fn write_file(mut self, path: impl Into<PathBuf>, data: impl Into<Vec<u8>>, mode: u32) -> Self {
+    pub fn write_file(
+        mut self,
+        path: impl Into<PathBuf>,
+        data: impl Into<Vec<u8>>,
+        mode: u32,
+    ) -> Self {
         self.steps.push(ActionStep::WriteFile {
             path: path.into(),
             data: data.into(),
@@ -130,13 +154,26 @@ impl ServiceAction {
     }
 
     pub fn remove_file(mut self, path: impl Into<PathBuf>) -> Self {
-        self.steps.push(ActionStep::RemoveFile {
+        self.steps.push(ActionStep::RemoveFile { path: path.into() });
+        self
+    }
+
+    pub fn read_dir<S>(mut self, path: impl Into<PathBuf>, extension: Option<S>) -> Self
+    where
+        S: Into<String>,
+    {
+        self.steps.push(ActionStep::ReadDir {
             path: path.into(),
+            extension: extension.map(Into::into),
         });
         self
     }
 
-    pub fn cmd(mut self, program: impl Into<String>, args: impl IntoIterator<Item = impl Into<String>>) -> Self {
+    pub fn cmd(
+        mut self,
+        program: impl Into<String>,
+        args: impl IntoIterator<Item = impl Into<String>>,
+    ) -> Self {
         self.steps.push(ActionStep::Cmd {
             program: program.into(),
             args: args.into_iter().map(Into::into).collect(),
@@ -144,7 +181,11 @@ impl ServiceAction {
         self
     }
 
-    pub fn cmd_ignore_error(mut self, program: impl Into<String>, args: impl IntoIterator<Item = impl Into<String>>) -> Self {
+    pub fn cmd_ignore_error(
+        mut self,
+        program: impl Into<String>,
+        args: impl IntoIterator<Item = impl Into<String>>,
+    ) -> Self {
         self.steps.push(ActionStep::CmdIgnoreError {
             program: program.into(),
             args: args.into_iter().map(Into::into).collect(),
@@ -153,7 +194,10 @@ impl ServiceAction {
     }
 
     /// Set an output parser for interpreting command results.
-    pub fn with_parser(mut self, parser: impl Fn(&[CmdOutput]) -> Result<ActionOutput> + Send + Sync + 'static) -> Self {
+    pub fn with_parser(
+        mut self,
+        parser: impl Fn(&[CmdOutput]) -> Result<ActionOutput> + Send + Sync + 'static,
+    ) -> Self {
         self.parser = Some(Arc::new(parser));
         self
     }
@@ -171,7 +215,7 @@ impl ServiceAction {
 
     /// Preview the commands as human-readable strings.
     pub fn commands(&self) -> Vec<String> {
-        self.steps.iter().map(|s| s.to_string()).collect()
+        self.steps.iter().map(ToString::to_string).collect()
     }
 
     /// Parse remote command outputs using the stored parser.
@@ -198,6 +242,33 @@ impl ServiceAction {
                             source: e,
                         })?;
                     }
+                }
+                ActionStep::ReadDir { path, extension } => {
+                    let mut entries = Vec::new();
+                    if path.exists() {
+                        for entry in std::fs::read_dir(path).map_err(|e| Error::FileError {
+                            path: path.clone(),
+                            source: e,
+                        })? {
+                            let entry = entry.map_err(Error::Io)?;
+                            let entry_path = entry.path();
+                            if let Some(extension) = extension
+                                && entry_path.extension().and_then(|ext| ext.to_str())
+                                    != Some(extension.as_str())
+                            {
+                                continue;
+                            }
+                            if let Some(name) = entry.file_name().to_str() {
+                                entries.push(name.to_string());
+                            }
+                        }
+                    }
+                    entries.sort();
+                    cmd_outputs.push(CmdOutput {
+                        exit_code: Some(0),
+                        stdout: entries.join("\n"),
+                        stderr: String::new(),
+                    });
                 }
                 ActionStep::Cmd { program, args } => {
                     let output = utils::run_command(program, args)?;
