@@ -144,6 +144,23 @@ mod openrc_tests {
 
         assert_eq!(script.description, "example-testapp");
     }
+
+    #[test]
+    fn openrc_list_is_deferred_action() {
+        use svc_mgr::action::ActionStep;
+        use svc_mgr::platform::openrc::OpenRcServiceManager;
+        use svc_mgr::ServiceManager;
+
+        let manager = OpenRcServiceManager::new();
+        let action = manager.list().unwrap();
+
+        assert!(matches!(
+            action.steps().first(),
+            Some(ActionStep::ReadDir { path, extension })
+                if path == &std::path::PathBuf::from("/etc/init.d")
+                    && extension.as_deref() == None
+        ));
+    }
 }
 
 // ── rcd ──
@@ -182,6 +199,23 @@ mod rcd_tests {
         let output = script.render();
 
         assert!(output.contains("command_args=\"-p ${pidfile} /usr/bin/myapp\""));
+    }
+
+    #[test]
+    fn rcd_list_is_deferred_action() {
+        use svc_mgr::action::ActionStep;
+        use svc_mgr::platform::rcd::RcdServiceManager;
+        use svc_mgr::ServiceManager;
+
+        let manager = RcdServiceManager::new();
+        let action = manager.list().unwrap();
+
+        assert!(matches!(
+            action.steps().first(),
+            Some(ActionStep::ReadDir { path, extension })
+                if path == &std::path::PathBuf::from("/usr/local/etc/rc.d")
+                    && extension.as_deref() == None
+        ));
     }
 }
 
@@ -260,6 +294,23 @@ mod sc_tests {
         let result =
             shell_escape::build_binpath("C:\\Program Files\\app.exe", &[]);
         assert_eq!(result, "\"C:\\Program Files\\app.exe\"");
+    }
+
+    #[test]
+    fn winsw_list_is_deferred_action() {
+        use svc_mgr::action::ActionStep;
+        use svc_mgr::platform::winsw::WinSwServiceManager;
+        use svc_mgr::ServiceManager;
+
+        let manager = WinSwServiceManager::with_dir(r"C:\ProgramData\service-manager");
+        let action = manager.list().unwrap();
+
+        assert!(matches!(
+            action.steps().first(),
+            Some(ActionStep::ReadDir { path, extension })
+                if path == &std::path::PathBuf::from(r"C:\ProgramData\service-manager")
+                    && extension.as_deref() == Some("xml")
+        ));
     }
 }
 
@@ -426,7 +477,7 @@ mod commands_tests {
         let action = manager.install(&config).unwrap();
         let cmds = action.commands();
 
-        assert!(cmds.len() >= 1);
+        assert!(!cmds.is_empty());
         assert!(cmds[0].contains("write file"));
         // autostart=true → should have bootstrap
         assert!(cmds.iter().any(|c| c.contains("launchctl bootstrap")));
@@ -493,7 +544,7 @@ mod commands_tests {
     fn launchd_list_returns_services() {
         let manager = TypedServiceManager::native().unwrap();
         let output = manager.list().unwrap().exec().unwrap();
-        let services = output.into_list();
+        let services = output.into_list().unwrap();
 
         // macOS always has some launchd services
         assert!(!services.is_empty());
@@ -504,7 +555,7 @@ mod commands_tests {
         let manager = TypedServiceManager::native().unwrap();
         let label = "com.example.nonexistent".parse().unwrap();
         let output = manager.status(&label).unwrap().exec().unwrap();
-        let status = output.into_status();
+        let status = output.into_status().unwrap();
 
         assert_eq!(status, svc_mgr::ServiceStatus::NotInstalled);
     }

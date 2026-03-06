@@ -34,8 +34,7 @@ impl ServiceManager for OpenRcServiceManager {
             let script = OpenRcScript::from_config(config);
             script.render()
         };
-        let mut action = ServiceAction::new()
-            .write_file(&path, data.into_bytes(), 0o755);
+        let mut action = ServiceAction::new().write_file(&path, data.into_bytes(), 0o755);
         if config.autostart {
             action = action.cmd("rc-update", ["add", &script_name, "default"]);
         }
@@ -68,16 +67,16 @@ impl ServiceManager for OpenRcServiceManager {
                 let out = outputs.last();
                 match out {
                     None => Ok(ActionOutput::Status(ServiceStatus::NotInstalled)),
-                    Some(o) => match o.exit_code {
+                    Some(output) => match output.exit_code {
                         Some(0) => Ok(ActionOutput::Status(ServiceStatus::Running)),
                         Some(3) => Ok(ActionOutput::Status(ServiceStatus::Stopped(None))),
                         Some(1) => {
-                            if o.stderr.contains("does not exist") {
+                            if output.stderr.contains("does not exist") {
                                 Ok(ActionOutput::Status(ServiceStatus::NotInstalled))
                             } else {
-                                Ok(ActionOutput::Status(ServiceStatus::Stopped(
-                                    Some(o.stderr.clone()),
-                                )))
+                                Ok(ActionOutput::Status(ServiceStatus::Stopped(Some(
+                                    output.stderr.clone(),
+                                ))))
                             }
                         }
                         _ => Ok(ActionOutput::Status(ServiceStatus::Stopped(None))),
@@ -100,25 +99,22 @@ impl ServiceManager for OpenRcServiceManager {
     }
 
     fn list(&self) -> Result<ServiceAction> {
-        let init_dir = PathBuf::from("/etc/init.d");
-        // For list, we read the directory directly since there's no single command
-        let mut services = Vec::new();
-        if init_dir.exists() {
-            for entry in std::fs::read_dir(&init_dir).map_err(|e| Error::FileError {
-                path: init_dir.clone(),
-                source: e,
-            })? {
-                let entry = entry.map_err(|e| Error::Io(e))?;
-                if let Some(name) = entry.file_name().to_str() {
-                    services.push(name.to_string());
-                }
-            }
-        }
-        services.sort();
-        // Return a no-op action with pre-computed result
-        let action = ServiceAction::new().with_parser(move |_: &[CmdOutput]| {
-            Ok(ActionOutput::List(services.clone()))
-        });
-        Ok(action)
+        Ok(ServiceAction::new()
+            .read_dir("/etc/init.d", None::<String>)
+            .with_parser(|outputs: &[CmdOutput]| {
+                let mut services = outputs
+                    .last()
+                    .map(|output| {
+                        output
+                            .stdout
+                            .lines()
+                            .filter(|line| !line.trim().is_empty())
+                            .map(str::to_owned)
+                            .collect::<Vec<_>>()
+                    })
+                    .unwrap_or_default();
+                services.sort();
+                Ok(ActionOutput::List(services))
+            }))
     }
 }

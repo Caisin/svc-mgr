@@ -34,8 +34,7 @@ impl ServiceManager for RcdServiceManager {
             let script = RcdScript::from_config(config);
             script.render()
         };
-        let mut action = ServiceAction::new()
-            .write_file(&path, data.into_bytes(), 0o755);
+        let mut action = ServiceAction::new().write_file(&path, data.into_bytes(), 0o755);
         if config.autostart {
             action = action.cmd("service", [&*script_name, "enable"]);
         }
@@ -68,7 +67,7 @@ impl ServiceManager for RcdServiceManager {
                 let out = outputs.last();
                 match out {
                     None => Ok(ActionOutput::Status(ServiceStatus::NotInstalled)),
-                    Some(o) => match o.exit_code {
+                    Some(output) => match output.exit_code {
                         Some(0) => Ok(ActionOutput::Status(ServiceStatus::Running)),
                         Some(3) => Ok(ActionOutput::Status(ServiceStatus::Stopped(None))),
                         Some(1) => Ok(ActionOutput::Status(ServiceStatus::NotInstalled)),
@@ -92,23 +91,22 @@ impl ServiceManager for RcdServiceManager {
     }
 
     fn list(&self) -> Result<ServiceAction> {
-        let rcd_dir = PathBuf::from("/usr/local/etc/rc.d");
-        let mut services = Vec::new();
-        if rcd_dir.exists() {
-            for entry in std::fs::read_dir(&rcd_dir).map_err(|e| Error::FileError {
-                path: rcd_dir.clone(),
-                source: e,
-            })? {
-                let entry = entry.map_err(|e| Error::Io(e))?;
-                if let Some(name) = entry.file_name().to_str() {
-                    services.push(name.to_string());
-                }
-            }
-        }
-        services.sort();
-        let action = ServiceAction::new().with_parser(move |_: &[CmdOutput]| {
-            Ok(ActionOutput::List(services.clone()))
-        });
-        Ok(action)
+        Ok(ServiceAction::new()
+            .read_dir("/usr/local/etc/rc.d", None::<String>)
+            .with_parser(|outputs: &[CmdOutput]| {
+                let mut services = outputs
+                    .last()
+                    .map(|output| {
+                        output
+                            .stdout
+                            .lines()
+                            .filter(|line| !line.trim().is_empty())
+                            .map(str::to_owned)
+                            .collect::<Vec<_>>()
+                    })
+                    .unwrap_or_default();
+                services.sort();
+                Ok(ActionOutput::List(services))
+            }))
     }
 }

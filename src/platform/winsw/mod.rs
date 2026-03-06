@@ -79,18 +79,16 @@ impl ServiceManager for WinSwServiceManager {
                 let out = outputs.last();
                 match out {
                     None => Ok(ActionOutput::Status(ServiceStatus::NotInstalled)),
-                    Some(o) => {
-                        let stdout = o.stdout.trim().to_lowercase();
+                    Some(output) => {
+                        let stdout = output.stdout.trim().to_lowercase();
                         if stdout.contains("running") || stdout.contains("started") {
                             Ok(ActionOutput::Status(ServiceStatus::Running))
                         } else if stdout.contains("stopped") {
                             Ok(ActionOutput::Status(ServiceStatus::Stopped(None)))
-                        } else if stdout.contains("nonexistent") || o.exit_code != Some(0) {
+                        } else if stdout.contains("nonexistent") || output.exit_code != Some(0) {
                             Ok(ActionOutput::Status(ServiceStatus::NotInstalled))
                         } else {
-                            Ok(ActionOutput::Status(ServiceStatus::Stopped(
-                                Some(stdout),
-                            )))
+                            Ok(ActionOutput::Status(ServiceStatus::Stopped(Some(stdout))))
                         }
                     }
                 }
@@ -111,27 +109,31 @@ impl ServiceManager for WinSwServiceManager {
     }
 
     fn list(&self) -> Result<ServiceAction> {
-        let mut services = Vec::new();
-        if self.service_def_dir.exists() {
-            for entry in
-                std::fs::read_dir(&self.service_def_dir).map_err(|e| Error::FileError {
-                    path: self.service_def_dir.clone(),
-                    source: e,
-                })?
-            {
-                let entry = entry.map_err(|e| Error::Io(e))?;
-                let path = entry.path();
-                if path.extension().and_then(|e| e.to_str()) == Some("xml") {
-                    if let Some(stem) = path.file_stem().and_then(|s| s.to_str()) {
-                        services.push(stem.to_string());
-                    }
-                }
-            }
-        }
-        services.sort();
-        let action = ServiceAction::new().with_parser(move |_: &[CmdOutput]| {
-            Ok(ActionOutput::List(services.clone()))
-        });
-        Ok(action)
+        Ok(ServiceAction::new()
+            .read_dir(&self.service_def_dir, Some("xml"))
+            .with_parser(|outputs: &[CmdOutput]| {
+                let mut services = outputs
+                    .last()
+                    .map(|output| {
+                        output
+                            .stdout
+                            .lines()
+                            .filter_map(|line| {
+                                let name = line.trim();
+                                if name.is_empty() {
+                                    return None;
+                                }
+                                Some(
+                                    name.strip_suffix(".xml")
+                                        .unwrap_or(name)
+                                        .to_string(),
+                                )
+                            })
+                            .collect::<Vec<_>>()
+                    })
+                    .unwrap_or_default();
+                services.sort();
+                Ok(ActionOutput::List(services))
+            }))
     }
 }

@@ -112,15 +112,15 @@ impl WinSwXmlDef {
         // <service>
         writer
             .write_event(Event::Start(BytesStart::new("service")))
-            .map_err(|e| crate::Error::Io(std::io::Error::new(std::io::ErrorKind::Other, e)))?;
+            .map_err(|e| crate::Error::Io(std::io::Error::other(e)))?;
 
         let write_element = |w: &mut Writer<Cursor<Vec<u8>>>, tag: &str, text: &str| -> crate::Result<()> {
             w.write_event(Event::Start(BytesStart::new(tag)))
-                .map_err(|e| crate::Error::Io(std::io::Error::new(std::io::ErrorKind::Other, e)))?;
+                .map_err(|e| crate::Error::Io(std::io::Error::other(e)))?;
             w.write_event(Event::Text(BytesText::new(text)))
-                .map_err(|e| crate::Error::Io(std::io::Error::new(std::io::ErrorKind::Other, e)))?;
+                .map_err(|e| crate::Error::Io(std::io::Error::other(e)))?;
             w.write_event(Event::End(BytesEnd::new(tag)))
-                .map_err(|e| crate::Error::Io(std::io::Error::new(std::io::ErrorKind::Other, e)))?;
+                .map_err(|e| crate::Error::Io(std::io::Error::other(e)))?;
             Ok(())
         };
 
@@ -147,7 +147,7 @@ impl WinSwXmlDef {
             elem.push_attribute(("value", v.as_str()));
             writer
                 .write_event(Event::Empty(elem))
-                .map_err(|e| crate::Error::Io(std::io::Error::new(std::io::ErrorKind::Other, e)))?;
+                .map_err(|e| crate::Error::Io(std::io::Error::other(e)))?;
         }
 
         for action in &self.onfailure {
@@ -158,7 +158,7 @@ impl WinSwXmlDef {
             }
             writer
                 .write_event(Event::Empty(elem))
-                .map_err(|e| crate::Error::Io(std::io::Error::new(std::io::ErrorKind::Other, e)))?;
+                .map_err(|e| crate::Error::Io(std::io::Error::other(e)))?;
         }
 
         if let Some(reset) = self.reset_failure {
@@ -174,17 +174,17 @@ impl WinSwXmlDef {
         if let Some(user) = &self.username {
             writer
                 .write_event(Event::Start(BytesStart::new("serviceaccount")))
-                .map_err(|e| crate::Error::Io(std::io::Error::new(std::io::ErrorKind::Other, e)))?;
+                .map_err(|e| crate::Error::Io(std::io::Error::other(e)))?;
             write_element(&mut writer, "username", user)?;
             writer
                 .write_event(Event::End(BytesEnd::new("serviceaccount")))
-                .map_err(|e| crate::Error::Io(std::io::Error::new(std::io::ErrorKind::Other, e)))?;
+                .map_err(|e| crate::Error::Io(std::io::Error::other(e)))?;
         }
 
         // </service>
         writer
             .write_event(Event::End(BytesEnd::new("service")))
-            .map_err(|e| crate::Error::Io(std::io::Error::new(std::io::ErrorKind::Other, e)))?;
+            .map_err(|e| crate::Error::Io(std::io::Error::other(e)))?;
 
         let result = writer.into_inner().into_inner();
         String::from_utf8(result)

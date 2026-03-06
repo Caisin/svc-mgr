@@ -135,7 +135,7 @@ impl LaunchdPlist {
         let mut buf = Vec::new();
         Value::Dictionary(dict)
             .to_writer_xml(&mut buf)
-            .map_err(|e| crate::Error::Io(std::io::Error::new(std::io::ErrorKind::Other, e)))?;
+            .map_err(|e| crate::Error::Io(std::io::Error::other(e)))?;
         Ok(buf)
     }
 }
