@@ -43,11 +43,11 @@ manager.restart(&label)?.exec()?;
 manager.uninstall(&label)?.exec()?;
 
 // 状态查询
-let status = manager.status(&label)?.exec()?.into_status();
+let status = manager.status(&label)?.exec()?.into_status()?;
 // ServiceStatus::Running | Stopped(Option<String>) | NotInstalled
 
 // 列出服务
-let services = manager.list()?.exec()?.into_list(); // Vec<String>
+let services = manager.list()?.exec()?.into_list()?; // Vec<String>
 
 // 预览命令（dry-run）
 let cmds = manager.install(&config)?.commands(); // Vec<String>
@@ -57,7 +57,7 @@ let cmds = manager.install(&config)?.commands(); // Vec<String>
 
 ```rust
 // 指定后端
-let manager = TypedServiceManager::target(ServiceManagerKind::Systemd);
+let manager = TypedServiceManager::target(ServiceManagerKind::Systemd)?;
 
 // 用户级别（launchd/systemd 支持）
 let mut manager = TypedServiceManager::native()?;

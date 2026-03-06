@@ -18,7 +18,7 @@ svc-mgr = { git = "https://github.com/Caisin/svc-mgr.git" }
 
 ## 核心模式
 
-所有 `ServiceManager` 方法返回 `ServiceAction`（延迟执行），调用 `.exec()` 执行，`.commands()` 预览。
+所有 `ServiceManager` 方法返回 `ServiceAction`（延迟执行），调用 `.exec()` 执行，`.commands()` 预览；`ActionOutput::into_status()` / `into_list()` 返回 `Result<_>`。
 
 ## 快速开始
 
@@ -60,3 +60,12 @@ builder.stdout_file("/var/log/myapp.out.log")
 
 - Builder API 完整方法、RestartPolicy 枚举、ServiceLabel 命名规则：见 [references/api.md](references/api.md)
 - rsvc CLI 用法和平台支持矩阵：见 [references/cli-and-platforms.md](references/cli-and-platforms.md)
+
+## CLI feature
+
+仓库内 `rsvc` 二进制需要启用 `cli` feature：
+
+```bash
+cargo build --features cli
+cargo run --features cli --bin rsvc -- --help
+```

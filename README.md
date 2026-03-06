@@ -46,7 +46,7 @@ fn main() -> svc_mgr::Result<()> {
     manager.start(&config.label)?.exec()?;
 
     // 查询状态
-    let status = manager.status(&config.label)?.exec()?.into_status();
+    let status = manager.status(&config.label)?.exec()?.into_status()?;
     println!("Service status: {:?}", status);
 
     // 预览命令（不实际执行）
@@ -56,7 +56,7 @@ fn main() -> svc_mgr::Result<()> {
     }
 
     // 列出服务
-    let services = manager.list()?.exec()?.into_list();
+    let services = manager.list()?.exec()?.into_list()?;
     println!("Services: {:?}", services);
 
     Ok(())
@@ -92,7 +92,7 @@ let config = ServiceConfig {
 use svc_mgr::{ServiceManagerKind, TypedServiceManager};
 
 // 指定使用 systemd
-let manager = TypedServiceManager::target(ServiceManagerKind::Systemd);
+let manager = TypedServiceManager::target(ServiceManagerKind::Systemd)?;
 
 // 或自动检测
 let manager = TypedServiceManager::native()?;
@@ -141,6 +141,15 @@ println!("{}", content);
 // WantedBy=multi-user.target
 ```
 
+## CLI 构建
+
+```bash
+cargo build --features cli
+cargo run --features cli --bin rsvc -- --help
+```
+
+默认不启用 CLI 依赖；作为库使用时不会额外引入 `clap` / `env_logger`。
+
 ## 平台支持
 
 | 平台 | 后端 | 服务文件结构体 | User 级别 |
@@ -173,6 +182,7 @@ pub trait ServiceManager {
 - `.exec()` — 本地执行，返回 `ActionOutput`
 - `.commands()` — 预览命令字符串
 - `.parse(outputs)` — 解析远程执行的输出（用于 SSH 场景）
+- `ActionOutput::into_status()` / `into_list()` 返回 `Result<_>`，避免 panic
 
 ## License
 

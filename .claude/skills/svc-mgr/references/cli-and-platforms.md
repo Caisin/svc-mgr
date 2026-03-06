@@ -1,5 +1,13 @@
 # CLI 工具 rsvc
 
+## 构建 CLI
+
+```bash
+cargo build --features cli
+cargo run --features cli --bin rsvc -- --help
+```
+
+
 ```bash
 rsvc install <LABEL> --program <PATH> [OPTIONS]
 rsvc uninstall <LABEL>

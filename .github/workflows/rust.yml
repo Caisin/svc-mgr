@@ -10,13 +10,23 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
 
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
 
     steps:
     - uses: actions/checkout@v4
-    - name: Build
+    - name: Build library
       run: cargo build --verbose
-    - name: Run tests
+    - name: Build CLI
+      run: cargo build --features cli --verbose
+    - name: Run library tests
       run: cargo test --verbose
+    - name: Run CLI tests
+      run: cargo test --features cli --verbose
+    - name: Run clippy
+      run: cargo clippy --all-targets --features cli -- -D warnings

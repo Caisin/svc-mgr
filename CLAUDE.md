@@ -5,11 +5,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Build & Test Commands
 
 ```bash
-cargo build                    # build library + rsvc binary
-cargo test                     # run all tests
-cargo test label_tests         # run a single test file
-cargo test builder_basic       # run a single test by name
-cargo run --bin rsvc -- --help # run CLI
+cargo build                             # build library only
+cargo build --features cli              # build library + rsvc binary
+cargo test                              # run library/integration tests
+cargo test --features cli               # also compile/test CLI target
+cargo test label_tests                  # run a single test file
+cargo test builder_basic                # run a single test by name
+cargo run --features cli --bin rsvc -- --help # run CLI
 cargo run --example basic_usage
 ```
 
