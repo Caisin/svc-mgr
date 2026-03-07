@@ -4,13 +4,12 @@ use super::app::{App, Mode, Tab};
 
 impl App {
     pub fn enter_menu_mode(&mut self) {
-        if self.tab == Tab::Services {
-            if self.service_list_state.selected().is_some() {
+        if self.tab == Tab::Services
+            && self.service_list_state.selected().is_some() {
                 self.mode = Mode::Menu;
                 self.menu_state.select(Some(0));
                 self.status_message = "Select action: ↑↓ to navigate, Enter to confirm, Esc to cancel".to_string();
             }
-        }
     }
 
     pub fn exit_menu_mode(&mut self) {
@@ -60,8 +59,8 @@ impl App {
     }
 
     pub fn execute_menu_action(&mut self) {
-        if let Some(menu_idx) = self.menu_state.selected() {
-            if let Some(service_idx) = self.service_list_state.selected() {
+        if let Some(menu_idx) = self.menu_state.selected()
+            && let Some(service_idx) = self.service_list_state.selected() {
                 let services = self.filtered_services();
                 if let Some(service) = services.get(service_idx) {
                     let menu_items = self.get_menu_items();
@@ -85,7 +84,6 @@ impl App {
                     }
                 }
             }
-        }
         self.exit_menu_mode();
     }
 }

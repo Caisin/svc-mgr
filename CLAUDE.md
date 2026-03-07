@@ -88,6 +88,41 @@ Each backend's `from_config()` + `render()` generates the platform service file.
 - Adding a new platform backend: create `src/platform/<name>/mod.rs` + config struct, implement `ServiceManager`, add variant to `TypedServiceManager` and both dispatch macros with appropriate `#[cfg]` gates
 - Integration tests go in `tests/`, grouped by platform with `#[cfg(target_os)]` gates
 
+## Pre-Commit Checklist
+
+**提交代码前必须完成以下检查（按顺序）：**
+
+1. **Clippy 检查**（最重要）
+   ```bash
+   cargo clippy --all-targets --all-features -- -D warnings
+   ```
+   必须通过，不能有任何警告或错误。
+
+2. **运行测试**
+   ```bash
+   cargo test --all-features
+   ```
+   所有测试必须通过。
+
+3. **跨平台编译验证**（至少测试以下平台）
+   ```bash
+   # macOS (native)
+   cargo build --features cli,tui
+
+   # Linux x86_64
+   cargo zigbuild --target x86_64-unknown-linux-gnu.2.35 --features cli,tui
+
+   # Windows x86_64
+   cargo zigbuild --target x86_64-pc-windows-gnu --features cli,tui
+   ```
+
+4. **格式化代码**（可选但推荐）
+   ```bash
+   cargo fmt
+   ```
+
+**如果任何一步失败，必须修复后才能提交。**
+
 ## Skill 同步规范
 
 当项目公共 API 发生变更时（包括但不限于）：

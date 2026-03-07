@@ -151,7 +151,7 @@ fn render_edit_box(f: &mut Frame, app: &App) {
 fn render_menu(f: &mut Frame, app: &mut App) {
     let area = centered_rect(40, 40, f.area());
 
-    let menu_items = vec!["Start", "Stop", "Restart", "Status", "Info", "Edit", "Uninstall"];
+    let menu_items = ["Start", "Stop", "Restart", "Status", "Info", "Edit", "Uninstall"];
     let items: Vec<ListItem> = menu_items
         .iter()
         .map(|item| ListItem::new(*item))
@@ -211,7 +211,7 @@ fn render_info_box(f: &mut Frame, app: &App) {
         .info_content
         .lines()
         .skip(app.info_scroll as usize)
-        .map(|line| Line::from(line))
+        .map(Line::from)
         .collect();
 
     let paragraph = Paragraph::new(lines)

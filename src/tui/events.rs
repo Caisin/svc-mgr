@@ -5,8 +5,8 @@ use crossterm::event::{Event, KeyCode, KeyEventKind, KeyModifiers};
 use super::app::{App, Mode, Tab};
 
 pub fn handle_events(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
-    if let Event::Key(key) = crossterm::event::read()? {
-        if key.kind == KeyEventKind::Press {
+    if let Event::Key(key) = crossterm::event::read()?
+        && key.kind == KeyEventKind::Press {
             match app.mode {
                 Mode::Normal => handle_normal_mode(app, key.code, key.modifiers),
                 Mode::Search => handle_search_mode(app, key.code),
@@ -16,7 +16,6 @@ pub fn handle_events(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                 Mode::ViewInfo => handle_view_info_mode(app, key.code),
             }
         }
-    }
     Ok(())
 }
 
@@ -44,49 +43,43 @@ fn handle_normal_mode(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) {
         KeyCode::Char('e') => {
             app.enter_edit_mode();
         }
-        KeyCode::Enter | KeyCode::Char(' ') => {
-            if app.tab == Tab::Services {
+        KeyCode::Enter | KeyCode::Char(' ')
+            if app.tab == Tab::Services => {
                 app.enter_menu_mode();
             }
-        }
         KeyCode::Char('i') => match app.tab {
-            Tab::Services => {
-                if let Some(idx) = app.service_list_state.selected() {
+            Tab::Services
+                if let Some(idx) = app.service_list_state.selected() => {
                     let services = app.filtered_services();
                     if let Some(service) = services.get(idx) {
                         app.view_service_info(service);
                     }
                 }
-            }
             Tab::Environment => {
                 app.enter_add_env_mode();
             }
+            _ => {}
         },
-        KeyCode::Char('d') => {
-            if app.tab == Tab::Environment {
+        KeyCode::Char('d')
+            if app.tab == Tab::Environment => {
                 app.delete_env_var();
             }
-        }
-        KeyCode::Char('s') => {
-            if app.tab == Tab::Services {
-                if let Some(idx) = app.service_list_state.selected() {
+        KeyCode::Char('s')
+            if app.tab == Tab::Services
+                && let Some(idx) = app.service_list_state.selected() => {
                     let services = app.filtered_services();
                     if let Some(service) = services.get(idx) {
                         app.start_service(service);
                     }
                 }
-            }
-        }
-        KeyCode::Char('t') => {
-            if app.tab == Tab::Services {
-                if let Some(idx) = app.service_list_state.selected() {
+        KeyCode::Char('t')
+            if app.tab == Tab::Services
+                && let Some(idx) = app.service_list_state.selected() => {
                     let services = app.filtered_services();
                     if let Some(service) = services.get(idx) {
                         app.stop_service(service);
                     }
                 }
-            }
-        }
         _ => {}
     }
 }
@@ -158,16 +151,14 @@ fn handle_add_env_mode(app: &mut App, code: KeyCode, modifiers: KeyModifiers) {
                 app.edit_value.pop();
             }
         }
-        KeyCode::Tab => {
-            if app.status_message.contains("Key:") && !app.edit_key.is_empty() {
+        KeyCode::Tab
+            if app.status_message.contains("Key:") && !app.edit_key.is_empty() => {
                 app.switch_to_value_input();
             }
-        }
-        KeyCode::Enter => {
-            if !app.status_message.contains("Key:") {
+        KeyCode::Enter
+            if !app.status_message.contains("Key:") => {
                 app.save_new_env();
             }
-        }
         KeyCode::Esc => {
             app.cancel_edit();
         }
