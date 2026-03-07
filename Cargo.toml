@@ -12,6 +12,7 @@ categories = ["os", "config"]
 [features]
 default = []
 cli = ["dep:clap", "dep:env_logger"]
+tui = ["cli", "dep:ratatui", "dep:crossterm"]
 
 [dependencies]
 cfg-if = "1"
@@ -21,6 +22,8 @@ thiserror = "2"
 which = "8"
 clap = { version = "4", features = ["derive"], optional = true }
 env_logger = { version = "0.11", optional = true }
+ratatui = { version = "0.29", optional = true }
+crossterm = { version = "0.28", optional = true }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 plist = "1"
@@ -32,10 +35,15 @@ winapi = { version = "0.3", features = ["winuser"] }
 
 [[bin]]
 name = "rsvc"
-path = "src/main.rs"
+path = "src/bin/rsvc.rs"
 required-features = ["cli"]
 
 [[bin]]
 name = "renv"
 path = "src/bin/renv.rs"
 required-features = ["cli"]
+
+[[bin]]
+name = "rtui"
+path = "src/bin/rtui.rs"
+required-features = ["tui"]
