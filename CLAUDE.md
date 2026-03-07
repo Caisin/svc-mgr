@@ -94,9 +94,12 @@ Each backend's `from_config()` + `render()` generates the platform service file.
 
 1. **Clippy 检查**（最重要）
    ```bash
+   # 检查所有平台的代码（包括 Linux、Windows 特定代码）
+   cargo clippy --all-targets --all-features --target x86_64-unknown-linux-gnu -- -D warnings
+   cargo clippy --all-targets --all-features --target x86_64-pc-windows-gnu -- -D warnings
    cargo clippy --all-targets --all-features -- -D warnings
    ```
-   必须通过，不能有任何警告或错误。
+   必须全部通过，不能有任何警告或错误。
 
 2. **运行测试**
    ```bash
@@ -122,6 +125,8 @@ Each backend's `from_config()` + `render()` generates the platform service file.
    ```
 
 **如果任何一步失败，必须修复后才能提交。**
+
+**注意：** 由于项目包含平台特定代码（Linux systemd/openrc、Windows sc/winsw），必须使用 `--target` 参数检查所有平台的 clippy 警告，否则可能在 CI 中失败。
 
 ## Skill 同步规范
 

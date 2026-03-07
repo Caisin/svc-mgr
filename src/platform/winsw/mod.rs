@@ -10,6 +10,12 @@ pub struct WinSwServiceManager {
     service_def_dir: PathBuf,
 }
 
+impl Default for WinSwServiceManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl WinSwServiceManager {
     pub fn new() -> Self {
         Self {

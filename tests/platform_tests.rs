@@ -158,7 +158,7 @@ mod openrc_tests {
             action.steps().first(),
             Some(ActionStep::ReadDir { path, extension })
                 if path == &std::path::PathBuf::from("/etc/init.d")
-                    && extension.as_deref() == None
+                    && extension.as_deref().is_none()
         ));
     }
 }
@@ -214,7 +214,7 @@ mod rcd_tests {
             action.steps().first(),
             Some(ActionStep::ReadDir { path, extension })
                 if path == &std::path::PathBuf::from("/usr/local/etc/rc.d")
-                    && extension.as_deref() == None
+                    && extension.as_deref().is_none()
         ));
     }
 }

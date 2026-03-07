@@ -10,6 +10,12 @@ use self::script::OpenRcScript;
 
 pub struct OpenRcServiceManager;
 
+impl Default for OpenRcServiceManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl OpenRcServiceManager {
     pub fn new() -> Self {
         Self

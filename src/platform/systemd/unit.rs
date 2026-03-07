@@ -82,7 +82,7 @@ impl SystemdUnit {
             unit: UnitSection {
                 description: config.description.clone(),
                 start_limit_interval_sec: reset_after,
-                start_limit_burst: start_limit_burst,
+                start_limit_burst,
             },
             service: ServiceSection {
                 exec_start,
@@ -92,7 +92,7 @@ impl SystemdUnit {
                     .map(|p| p.to_string_lossy().into_owned()),
                 environment: config.environment.clone(),
                 restart,
-                restart_sec: restart_sec,
+                restart_sec,
                 user,
                 standard_output: stdout_path.clone(),
                 standard_error: stderr_path.or(stdout_path),

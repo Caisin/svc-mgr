@@ -9,6 +9,12 @@ use self::config::ScServiceConfig;
 
 pub struct ScServiceManager;
 
+impl Default for ScServiceManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ScServiceManager {
     pub fn new() -> Self {
         Self

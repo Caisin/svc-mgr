@@ -21,12 +21,12 @@ impl WindowsEnvManager {
             EnvScope::User => {
                 let hkcu = RegKey::predef(HKEY_CURRENT_USER);
                 hkcu.open_subkey("Environment")
-                    .map_err(|e| Error::Io(std::io::Error::new(std::io::ErrorKind::Other, e)))
+                    .map_err(|e| Error::Io(std::io::Error::other(e)))
             }
             EnvScope::System => {
                 let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
                 hklm.open_subkey("SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment")
-                    .map_err(|e| Error::Io(std::io::Error::new(std::io::ErrorKind::Other, e)))
+                    .map_err(|e| Error::Io(std::io::Error::other(e)))
             }
         }
     }
@@ -37,7 +37,7 @@ impl WindowsEnvManager {
             EnvScope::User => {
                 let hkcu = RegKey::predef(HKEY_CURRENT_USER);
                 hkcu.open_subkey_with_flags("Environment", KEY_READ | KEY_WRITE)
-                    .map_err(|e| Error::Io(std::io::Error::new(std::io::ErrorKind::Other, e)))
+                    .map_err(|e| Error::Io(std::io::Error::other(e)))
             }
             EnvScope::System => {
                 let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
@@ -45,7 +45,7 @@ impl WindowsEnvManager {
                     "SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment",
                     KEY_READ | KEY_WRITE,
                 )
-                .map_err(|e| Error::Io(std::io::Error::new(std::io::ErrorKind::Other, e)))
+                .map_err(|e| Error::Io(std::io::Error::other(e)))
             }
         }
     }
@@ -94,7 +94,7 @@ impl EnvManager for WindowsEnvManager {
         let reg_key = self.get_registry_key_writable(scope)?;
         reg_key
             .set_value(key, &value)
-            .map_err(|e| Error::Io(std::io::Error::new(std::io::ErrorKind::Other, e)))?;
+            .map_err(|e| Error::Io(std::io::Error::other(e)))?;
 
         // Broadcast WM_SETTINGCHANGE to notify other applications
         #[cfg(target_os = "windows")]
@@ -130,7 +130,7 @@ impl EnvManager for WindowsEnvManager {
         let reg_key = self.get_registry_key_writable(scope)?;
         reg_key
             .delete_value(key)
-            .map_err(|e| Error::Io(std::io::Error::new(std::io::ErrorKind::Other, e)))?;
+            .map_err(|e| Error::Io(std::io::Error::other(e)))?;
 
         // Broadcast WM_SETTINGCHANGE
         #[cfg(target_os = "windows")]
