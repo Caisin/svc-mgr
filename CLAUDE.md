@@ -7,13 +7,44 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```bash
 cargo build                             # build library only
 cargo build --features cli              # build library + rsvc binary
+cargo build --features cli,tui          # build library + rsvc + rtui binaries
 cargo test                              # run library/integration tests
 cargo test --features cli               # also compile/test CLI target
 cargo test label_tests                  # run a single test file
 cargo test builder_basic                # run a single test by name
 cargo run --features cli --bin rsvc -- --help # run CLI
+cargo run --features tui --bin rtui     # run TUI
 cargo run --example basic_usage
 ```
+
+## Cross-Platform Compilation
+
+使用 `cargo-zigbuild` 进行跨平台编译（推荐）：
+
+```bash
+# 安装工具（首次）
+brew install zig
+cargo install cargo-zigbuild
+rustup target add x86_64-unknown-linux-gnu
+
+# 编译为 Linux x86_64（Ubuntu 22.04 / glibc 2.35）
+cargo zigbuild --release --target x86_64-unknown-linux-gnu.2.35 --features cli,tui
+
+# 编译为 Windows x86_64
+rustup target add x86_64-pc-windows-gnu
+cargo zigbuild --release --target x86_64-pc-windows-gnu --features cli,tui
+
+# 编译为 Linux ARM64
+rustup target add aarch64-unknown-linux-gnu
+cargo zigbuild --release --target aarch64-unknown-linux-gnu.2.35 --features cli,tui
+```
+
+**提交代码前必须确保跨平台编译通过**，至少测试：
+- macOS (native): `cargo build --features cli,tui`
+- Linux x86_64: `cargo zigbuild --target x86_64-unknown-linux-gnu.2.35 --features cli,tui`
+- Windows x86_64: `cargo zigbuild --target x86_64-pc-windows-gnu --features cli,tui`
+
+详见 `.claude/skills/rust-cross-compile/SKILL.md`。
 
 ## Architecture
 
