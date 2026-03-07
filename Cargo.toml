@@ -27,8 +27,15 @@ plist = "1"
 
 [target.'cfg(target_os = "windows")'.dependencies]
 quick-xml = "0.39"
+winreg = "0.52"
+winapi = { version = "0.3", features = ["winuser"] }
 
 [[bin]]
 name = "rsvc"
 path = "src/main.rs"
+required-features = ["cli"]
+
+[[bin]]
+name = "renv"
+path = "src/bin/renv.rs"
 required-features = ["cli"]
