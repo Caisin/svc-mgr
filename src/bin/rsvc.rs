@@ -26,7 +26,7 @@ fn open_editor(path: &str) -> svc_mgr::Result<()> {
     let status = std::process::Command::new(&editor)
         .arg(path)
         .status()
-        .map_err(|e| svc_mgr::Error::Io(e))?;
+        .map_err(svc_mgr::Error::Io)?;
 
     if !status.success() {
         return Err(svc_mgr::Error::CommandFailed {
