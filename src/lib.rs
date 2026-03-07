@@ -8,6 +8,9 @@ pub mod platform;
 pub mod typed;
 pub mod utils;
 
+#[cfg(feature = "tui")]
+pub mod tui;
+
 use std::ffi::OsString;
 use std::path::PathBuf;
 
