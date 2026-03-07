@@ -6,6 +6,38 @@ use svc_mgr::{
     ServiceManagerKind, ServiceStatus, TypedServiceManager,
 };
 
+fn get_editor() -> String {
+    std::env::var("EDITOR")
+        .or_else(|_| std::env::var("VISUAL"))
+        .unwrap_or_else(|_| {
+            #[cfg(target_os = "windows")]
+            {
+                "notepad".to_string()
+            }
+            #[cfg(not(target_os = "windows"))]
+            {
+                "vi".to_string()
+            }
+        })
+}
+
+fn open_editor(path: &str) -> svc_mgr::Result<()> {
+    let editor = get_editor();
+    let status = std::process::Command::new(&editor)
+        .arg(path)
+        .status()
+        .map_err(|e| svc_mgr::Error::Io(e))?;
+
+    if !status.success() {
+        return Err(svc_mgr::Error::CommandFailed {
+            command: format!("{} {}", editor, path),
+            code: status.code().unwrap_or(-1),
+            message: "Editor exited with error".to_string(),
+        });
+    }
+    Ok(())
+}
+
 #[derive(Parser)]
 #[command(name = "rsvc", about = "Cross-platform service management CLI")]
 struct Cli {
@@ -130,6 +162,11 @@ enum Commands {
     },
     /// Get detailed service information
     Info {
+        /// Service label
+        label: String,
+    },
+    /// Edit service configuration file
+    Edit {
         /// Service label
         label: String,
     },
@@ -283,6 +320,29 @@ fn run(cli: Cli) -> svc_mgr::Result<()> {
                     println!("{}", "-".repeat(info.config_path.len()));
                 }
                 println!("{}", info.config_content);
+            }
+        }
+        Commands::Edit { label } => {
+            let label = label.parse()?;
+            let action = manager.info(&label)?;
+
+            if cli.dry_run {
+                for cmd in action.commands() {
+                    println!("{cmd}");
+                }
+                let editor = get_editor();
+                println!("{} <config-file>", editor);
+            } else {
+                let output = action.exec()?;
+                let info = output.into_info()?;
+
+                if info.config_path.is_empty() {
+                    eprintln!("Error: This backend does not use configuration files");
+                    eprintln!("Hint: sc.exe services are configured via registry, use 'sc.exe config' instead");
+                    process::exit(1);
+                }
+
+                open_editor(&info.config_path)?;
             }
         }
         Commands::List => {

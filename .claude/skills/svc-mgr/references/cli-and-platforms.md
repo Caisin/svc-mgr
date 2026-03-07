@@ -16,6 +16,7 @@ rsvc stop <LABEL>
 rsvc restart <LABEL>
 rsvc status <LABEL>
 rsvc info <LABEL>
+rsvc edit <LABEL>
 rsvc list
 ```
 
@@ -54,8 +55,18 @@ rsvc install com.example.myapp --program /usr/bin/myapp --workdir /opt/myapp --a
 rsvc --dry-run install com.example.myapp --program /usr/bin/myapp
 rsvc status com.example.myapp
 rsvc info com.example.myapp
+rsvc edit com.example.myapp  # 使用 $EDITOR 编辑配置文件
 rsvc list --dry-run
 ```
+
+## 编辑器配置
+
+`rsvc edit` 使用以下优先级选择编辑器：
+1. `$EDITOR` 环境变量
+2. `$VISUAL` 环境变量
+3. 平台默认：Windows 使用 `notepad`，Unix 使用 `vi`
+
+注意：sc.exe 后端不支持 edit 命令（无配置文件）。
 
 # 平台支持
 
