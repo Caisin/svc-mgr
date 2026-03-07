@@ -23,14 +23,14 @@ which = "8"
 clap = { version = "4", features = ["derive"], optional = true }
 env_logger = { version = "0.11", optional = true }
 ratatui = { version = "0.30", optional = true }
-crossterm = { version = "0.28", optional = true }
+crossterm = { version = "0.29", optional = true }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 plist = "1"
 
 [target.'cfg(target_os = "windows")'.dependencies]
 quick-xml = "0.39"
-winreg = "0.52"
+winreg = "0.55"
 winapi = { version = "0.3", features = ["winuser"] }
 
 [[bin]]
