@@ -21,6 +21,9 @@ pub enum Mode {
     Normal,
     Search,
     Edit,
+    Menu,      // 操作菜单
+    AddEnv,    // 添加环境变量
+    ViewInfo,  // 查看服务详情
 }
 
 pub struct App {
@@ -30,8 +33,12 @@ pub struct App {
     pub env_vars: Vec<(String, String)>,
     pub service_list_state: ListState,
     pub env_list_state: ListState,
+    pub menu_state: ListState,
     pub search_query: String,
     pub edit_value: String,
+    pub edit_key: String,      // 用于添加环境变量时的 key
+    pub info_content: String,  // 服务详情内容
+    pub info_scroll: u16,      // 详情滚动位置
     pub status_message: String,
     pub should_quit: bool,
 }
@@ -45,9 +52,13 @@ impl App {
             env_vars: Vec::new(),
             service_list_state: ListState::default(),
             env_list_state: ListState::default(),
+            menu_state: ListState::default(),
             search_query: String::new(),
             edit_value: String::new(),
-            status_message: "Press '/' to search, 'e' to edit, 'q' to quit".to_string(),
+            edit_key: String::new(),
+            info_content: String::new(),
+            info_scroll: 0,
+            status_message: "Tab: switch | /: search | Enter: menu | i: info/add | e: edit | q: quit".to_string(),
             should_quit: false,
         };
         app.refresh_services();
@@ -216,7 +227,7 @@ impl App {
 
     pub fn exit_search_mode(&mut self) {
         self.mode = Mode::Normal;
-        self.status_message = "Press '/' to search, 'e' to edit, 'q' to quit".to_string();
+        self.status_message = "Tab: switch | /: search | Enter: menu | i: info/add | e: edit | q: quit".to_string();
     }
 
     pub fn enter_edit_mode(&mut self) {
@@ -238,6 +249,7 @@ impl App {
                     if let Some((key, value)) = env_vars.get(idx) {
                         self.mode = Mode::Edit;
                         self.edit_value = value.clone();
+                        self.edit_key = key.clone();
                         self.status_message = format!("Editing {}: Type new value, Enter to save, Esc to cancel", key);
                     }
                 }
@@ -245,33 +257,14 @@ impl App {
         }
     }
 
-    pub fn save_edit(&mut self) {
-        if let Some(idx) = self.env_list_state.selected() {
-            let env_vars = self.filtered_env_vars();
-            if let Some((key, _)) = env_vars.get(idx) {
-                let manager = crate::env::manager();
-                match manager.set(crate::env::EnvScope::User, key, &self.edit_value) {
-                    Ok(_) => {
-                        self.status_message = format!("Updated {}={}", key, self.edit_value);
-                        self.refresh_env_vars();
-                    }
-                    Err(e) => {
-                        self.status_message = format!("Error updating env var: {}", e);
-                    }
-                }
-            }
-        }
-        self.mode = Mode::Normal;
-        self.edit_value.clear();
-    }
-
     pub fn cancel_edit(&mut self) {
         self.mode = Mode::Normal;
         self.edit_value.clear();
+        self.edit_key.clear();
         self.status_message = "Edit cancelled".to_string();
     }
 
-    fn edit_service(&self, label: &str) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn edit_service(&self, label: &str) -> Result<(), Box<dyn std::error::Error>> {
         // Temporarily exit TUI to run editor
         disable_raw_mode()?;
         execute!(io::stdout(), LeaveAlternateScreen, DisableMouseCapture)?;
@@ -311,5 +304,22 @@ impl App {
         execute!(io::stdout(), EnterAlternateScreen, EnableMouseCapture)?;
 
         Ok(())
+    }
+
+    pub fn exit_info_mode(&mut self) {
+        self.mode = Mode::Normal;
+        self.info_content.clear();
+        self.info_scroll = 0;
+        self.status_message = "Tab: switch | /: search | Enter: menu | i: info/add | e: edit | q: quit".to_string();
+    }
+
+    pub fn scroll_info_up(&mut self) {
+        if self.info_scroll > 0 {
+            self.info_scroll -= 1;
+        }
+    }
+
+    pub fn scroll_info_down(&mut self) {
+        self.info_scroll += 1;
     }
 }
