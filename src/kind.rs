@@ -1,4 +1,14 @@
 use crate::error::Result;
+#[cfg(any(target_os = "linux", not(any(
+    target_os = "macos",
+    target_os = "windows",
+    target_os = "freebsd",
+    target_os = "dragonfly",
+    target_os = "openbsd",
+    target_os = "netbsd",
+    target_os = "linux"
+))))]
+use crate::error::Error;
 
 /// Enumeration of supported service manager backends.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

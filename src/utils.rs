@@ -6,7 +6,7 @@ use crate::error::{Error, Result};
 
 /// Write data to a file, creating parent directories as needed.
 /// On Unix, sets the file permissions to `mode`.
-pub fn write_file(path: &Path, data: &[u8], mode: u32) -> Result<()> {
+pub fn write_file(path: &Path, data: &[u8], #[allow(unused_variables)] mode: u32) -> Result<()> {
     if let Some(parent) = path.parent() {
         std::fs::create_dir_all(parent).map_err(|e| Error::FileError {
             path: parent.to_path_buf(),

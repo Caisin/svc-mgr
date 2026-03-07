@@ -58,9 +58,9 @@ impl EnvManager for WindowsEnvManager {
         let mut vars = HashMap::new();
 
         for (name, value) in key.enum_values().filter_map(|r| r.ok()) {
-            if let Some(s) = value.to_string().ok() {
-                vars.insert(name, s);
-            }
+            // RegValue.to_string() returns String directly, not Result
+            let s = value.to_string();
+            vars.insert(name, s);
         }
 
         Ok(vars)
