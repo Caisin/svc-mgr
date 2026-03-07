@@ -128,6 +128,11 @@ enum Commands {
         /// Service label
         label: String,
     },
+    /// Get detailed service information
+    Info {
+        /// Service label
+        label: String,
+    },
     /// List installed services
     List,
 }
@@ -265,6 +270,19 @@ fn run(cli: Cli) -> svc_mgr::Result<()> {
                     },
                     ServiceStatus::NotInstalled => println!("Not installed"),
                 }
+            }
+        }
+        Commands::Info { label } => {
+            let label = label.parse()?;
+            let action = manager.info(&label)?;
+            let output = run_action(action, cli.dry_run)?;
+            if !cli.dry_run {
+                let info = output.into_info()?;
+                if !info.config_path.is_empty() {
+                    println!("{}", info.config_path);
+                    println!("{}", "-".repeat(info.config_path.len()));
+                }
+                println!("{}", info.config_content);
             }
         }
         Commands::List => {

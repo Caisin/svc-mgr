@@ -10,7 +10,7 @@ pub mod utils;
 use std::ffi::OsString;
 use std::path::PathBuf;
 
-pub use action::{ActionOutput, ActionStep, CmdOutput, ServiceAction};
+pub use action::{ActionOutput, ActionStep, CmdOutput, ServiceAction, ServiceInfo};
 pub use builder::ServiceBuilder;
 pub use error::{Error, Result};
 pub use kind::ServiceManagerKind;
@@ -118,6 +118,9 @@ pub trait ServiceManager {
 
     /// Query the current status of a service.
     fn status(&self, label: &ServiceLabel) -> Result<ServiceAction>;
+
+    /// Get detailed information about an installed service.
+    fn info(&self, label: &ServiceLabel) -> Result<ServiceAction>;
 
     /// List installed services.
     fn list(&self) -> Result<ServiceAction>;

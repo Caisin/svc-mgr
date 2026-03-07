@@ -15,6 +15,7 @@ rsvc start <LABEL>
 rsvc stop <LABEL>
 rsvc restart <LABEL>
 rsvc status <LABEL>
+rsvc info <LABEL>
 rsvc list
 ```
 
@@ -52,6 +53,7 @@ rsvc list
 rsvc install com.example.myapp --program /usr/bin/myapp --workdir /opt/myapp --autostart
 rsvc --dry-run install com.example.myapp --program /usr/bin/myapp
 rsvc status com.example.myapp
+rsvc info com.example.myapp
 rsvc list --dry-run
 ```
 

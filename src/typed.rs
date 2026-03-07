@@ -153,6 +153,10 @@ impl ServiceManager for TypedServiceManager {
         dispatch!(self, status, label)
     }
 
+    fn info(&self, label: &ServiceLabel) -> Result<ServiceAction> {
+        dispatch!(self, info, label)
+    }
+
     fn list(&self) -> Result<ServiceAction> {
         dispatch!(self, list)
     }

@@ -32,6 +32,8 @@ pub enum ActionStep {
         program: String,
         args: Vec<String>,
     },
+    /// Read a file's contents at execution time.
+    ReadFile { path: PathBuf },
 }
 
 impl fmt::Display for ActionStep {
@@ -46,6 +48,7 @@ impl fmt::Display for ActionStep {
             Self::Cmd { program, args } | Self::CmdIgnoreError { program, args } => {
                 write!(f, "{}", utils::format_command_preview(program, args))
             }
+            Self::ReadFile { path } => write!(f, "# read file: {}", path.display()),
         }
     }
 }
@@ -68,6 +71,14 @@ impl From<Output> for CmdOutput {
     }
 }
 
+/// Detailed information about an installed service.
+#[derive(Debug, Clone)]
+pub struct ServiceInfo {
+    pub label: String,
+    pub config_path: String,
+    pub config_content: String,
+}
+
 /// The result of executing a ServiceAction.
 #[derive(Debug, Clone)]
 pub enum ActionOutput {
@@ -77,6 +88,8 @@ pub enum ActionOutput {
     Status(ServiceStatus),
     /// Service list result.
     List(Vec<String>),
+    /// Service info result.
+    Info(ServiceInfo),
 }
 
 impl ActionOutput {
@@ -84,13 +97,9 @@ impl ActionOutput {
     pub fn into_status(self) -> Result<ServiceStatus> {
         match self {
             Self::Status(status) => Ok(status),
-            Self::None => Err(Error::UnexpectedActionOutput {
+            other => Err(Error::UnexpectedActionOutput {
                 expected: "Status",
-                actual: "None",
-            }),
-            Self::List(_) => Err(Error::UnexpectedActionOutput {
-                expected: "Status",
-                actual: "List",
+                actual: other.variant_name(),
             }),
         }
     }
@@ -99,14 +108,30 @@ impl ActionOutput {
     pub fn into_list(self) -> Result<Vec<String>> {
         match self {
             Self::List(list) => Ok(list),
-            Self::None => Err(Error::UnexpectedActionOutput {
+            other => Err(Error::UnexpectedActionOutput {
                 expected: "List",
-                actual: "None",
+                actual: other.variant_name(),
             }),
-            Self::Status(_) => Err(Error::UnexpectedActionOutput {
-                expected: "List",
-                actual: "Status",
+        }
+    }
+
+    /// Extract service info.
+    pub fn into_info(self) -> Result<ServiceInfo> {
+        match self {
+            Self::Info(info) => Ok(info),
+            other => Err(Error::UnexpectedActionOutput {
+                expected: "Info",
+                actual: other.variant_name(),
             }),
+        }
+    }
+
+    fn variant_name(&self) -> &'static str {
+        match self {
+            Self::None => "None",
+            Self::Status(_) => "Status",
+            Self::List(_) => "List",
+            Self::Info(_) => "Info",
         }
     }
 }
@@ -166,6 +191,11 @@ impl ServiceAction {
             path: path.into(),
             extension: extension.map(Into::into),
         });
+        self
+    }
+
+    pub fn read_file(mut self, path: impl Into<PathBuf>) -> Self {
+        self.steps.push(ActionStep::ReadFile { path: path.into() });
         self
     }
 
@@ -278,6 +308,17 @@ impl ServiceAction {
                     if let Ok(output) = utils::execute_command(program, args) {
                         cmd_outputs.push(CmdOutput::from(output));
                     }
+                }
+                ActionStep::ReadFile { path } => {
+                    let content = std::fs::read_to_string(path).map_err(|e| Error::FileError {
+                        path: path.clone(),
+                        source: e,
+                    })?;
+                    cmd_outputs.push(CmdOutput {
+                        exit_code: Some(0),
+                        stdout: content,
+                        stderr: String::new(),
+                    });
                 }
             }
         }

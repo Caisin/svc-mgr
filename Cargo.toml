@@ -18,7 +18,7 @@ cfg-if = "1"
 dirs = "6"
 log = "0.4"
 thiserror = "2"
-which = "7"
+which = "8"
 clap = { version = "4", features = ["derive"], optional = true }
 env_logger = { version = "0.11", optional = true }
 
@@ -26,7 +26,7 @@ env_logger = { version = "0.11", optional = true }
 plist = "1"
 
 [target.'cfg(target_os = "windows")'.dependencies]
-quick-xml = "0.37"
+quick-xml = "0.39"
 
 [[bin]]
 name = "rsvc"

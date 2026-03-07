@@ -1,7 +1,7 @@
 pub mod config;
 pub mod shell_escape;
 
-use crate::action::{ActionOutput, CmdOutput, ServiceAction};
+use crate::action::{ActionOutput, CmdOutput, ServiceAction, ServiceInfo};
 use crate::error::{Error, Result};
 use crate::{ServiceConfig, ServiceLabel, ServiceLevel, ServiceManager, ServiceStatus};
 
@@ -99,6 +99,24 @@ impl ServiceManager for ScServiceManager {
                     }
                 }
                 Ok(ActionOutput::List(services))
+            }))
+    }
+
+    fn info(&self, label: &ServiceLabel) -> Result<ServiceAction> {
+        let name = label.to_qualified_name();
+        let name_clone = name.clone();
+        Ok(ServiceAction::new()
+            .cmd_ignore_error("sc.exe", ["qc", &name])
+            .with_parser(move |outputs: &[CmdOutput]| {
+                let content = outputs
+                    .last()
+                    .map(|o| o.stdout.clone())
+                    .unwrap_or_default();
+                Ok(ActionOutput::Info(ServiceInfo {
+                    label: name_clone.clone(),
+                    config_path: String::new(),
+                    config_content: content,
+                }))
             }))
     }
 }

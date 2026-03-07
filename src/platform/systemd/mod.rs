@@ -2,7 +2,7 @@ pub mod unit;
 
 use std::path::PathBuf;
 
-use crate::action::{ActionOutput, CmdOutput, ServiceAction};
+use crate::action::{ActionOutput, CmdOutput, ServiceAction, ServiceInfo};
 use crate::error::{Error, Result};
 use crate::{ServiceConfig, ServiceLabel, ServiceLevel, ServiceManager, ServiceStatus};
 
@@ -154,6 +154,25 @@ impl ServiceManager for SystemdServiceManager {
                     }
                 }
                 Ok(ActionOutput::List(services))
+            }))
+    }
+
+    fn info(&self, label: &ServiceLabel) -> Result<ServiceAction> {
+        let path = self.unit_path(label)?;
+        let path_str = path.to_string_lossy().to_string();
+        let label_str = label.to_script_name();
+        Ok(ServiceAction::new()
+            .read_file(&path)
+            .with_parser(move |outputs: &[CmdOutput]| {
+                let content = outputs
+                    .last()
+                    .map(|o| o.stdout.clone())
+                    .unwrap_or_default();
+                Ok(ActionOutput::Info(ServiceInfo {
+                    label: label_str.clone(),
+                    config_path: path_str.clone(),
+                    config_content: content,
+                }))
             }))
     }
 }
