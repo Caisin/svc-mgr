@@ -120,6 +120,12 @@ pub trait ServiceManager {
         Ok(stop_action.merge(start_action))
     }
 
+    /// Enable a service to start on boot.
+    fn enable(&self, label: &ServiceLabel) -> Result<ServiceAction>;
+
+    /// Disable a service from starting on boot.
+    fn disable(&self, label: &ServiceLabel) -> Result<ServiceAction>;
+
     /// Query the current status of a service.
     fn status(&self, label: &ServiceLabel) -> Result<ServiceAction>;
 

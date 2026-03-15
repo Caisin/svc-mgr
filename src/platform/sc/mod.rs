@@ -47,6 +47,16 @@ impl ServiceManager for ScServiceManager {
         Ok(ServiceAction::new().cmd("sc.exe", ["stop", &name]))
     }
 
+    fn enable(&self, label: &ServiceLabel) -> Result<ServiceAction> {
+        let name = label.to_qualified_name();
+        Ok(ServiceAction::new().cmd("sc.exe", ["config", &name, "start=", "auto"]))
+    }
+
+    fn disable(&self, label: &ServiceLabel) -> Result<ServiceAction> {
+        let name = label.to_qualified_name();
+        Ok(ServiceAction::new().cmd("sc.exe", ["config", &name, "start=", "demand"]))
+    }
+
     fn status(&self, label: &ServiceLabel) -> Result<ServiceAction> {
         let name = label.to_qualified_name();
         Ok(ServiceAction::new()

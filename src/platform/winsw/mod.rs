@@ -76,6 +76,16 @@ impl ServiceManager for WinSwServiceManager {
         Ok(ServiceAction::new().cmd("winsw", ["stop", &path.to_string_lossy()]))
     }
 
+    fn enable(&self, _label: &ServiceLabel) -> Result<ServiceAction> {
+        // WinSW services are auto-enabled on install, no separate enable command
+        Ok(ServiceAction::new())
+    }
+
+    fn disable(&self, _label: &ServiceLabel) -> Result<ServiceAction> {
+        // WinSW services are managed via install/uninstall, no separate disable command
+        Ok(ServiceAction::new())
+    }
+
     fn status(&self, label: &ServiceLabel) -> Result<ServiceAction> {
         let path = self.xml_path(label);
         let path_str = path.to_string_lossy().to_string();

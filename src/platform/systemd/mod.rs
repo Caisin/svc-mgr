@@ -98,6 +98,18 @@ impl ServiceManager for SystemdServiceManager {
         Ok(ServiceAction::new().cmd("systemctl", &args))
     }
 
+    fn enable(&self, label: &ServiceLabel) -> Result<ServiceAction> {
+        let script_name = label.to_script_name();
+        let args = self.systemctl_args(&["enable", &script_name]);
+        Ok(ServiceAction::new().cmd("systemctl", &args))
+    }
+
+    fn disable(&self, label: &ServiceLabel) -> Result<ServiceAction> {
+        let script_name = label.to_script_name();
+        let args = self.systemctl_args(&["disable", &script_name]);
+        Ok(ServiceAction::new().cmd("systemctl", &args))
+    }
+
     fn status(&self, label: &ServiceLabel) -> Result<ServiceAction> {
         let script_name = label.to_script_name();
         let args = self.systemctl_args(&["status", &script_name]);

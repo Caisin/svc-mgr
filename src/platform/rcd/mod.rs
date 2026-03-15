@@ -59,6 +59,16 @@ impl ServiceManager for RcdServiceManager {
         Ok(ServiceAction::new().cmd("service", [&*script_name, "stop"]))
     }
 
+    fn enable(&self, label: &ServiceLabel) -> Result<ServiceAction> {
+        let script_name = label.to_script_name();
+        Ok(ServiceAction::new().cmd("service", [&*script_name, "enable"]))
+    }
+
+    fn disable(&self, label: &ServiceLabel) -> Result<ServiceAction> {
+        let script_name = label.to_script_name();
+        Ok(ServiceAction::new().cmd("service", [&*script_name, "disable"]))
+    }
+
     fn status(&self, label: &ServiceLabel) -> Result<ServiceAction> {
         let script_name = label.to_script_name();
         Ok(ServiceAction::new()

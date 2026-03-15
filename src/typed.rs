@@ -145,6 +145,14 @@ impl ServiceManager for TypedServiceManager {
         dispatch!(self, stop, label)
     }
 
+    fn enable(&self, label: &ServiceLabel) -> Result<ServiceAction> {
+        dispatch!(self, enable, label)
+    }
+
+    fn disable(&self, label: &ServiceLabel) -> Result<ServiceAction> {
+        dispatch!(self, disable, label)
+    }
+
     fn restart(&self, label: &ServiceLabel) -> Result<ServiceAction> {
         dispatch!(self, restart, label)
     }

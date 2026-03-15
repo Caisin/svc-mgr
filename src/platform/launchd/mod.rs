@@ -111,6 +111,22 @@ impl ServiceManager for LaunchdServiceManager {
         ))
     }
 
+    fn enable(&self, label: &ServiceLabel) -> Result<ServiceAction> {
+        let domain = self.domain_target();
+        let path = self.plist_path(label)?;
+        Ok(ServiceAction::new().cmd(
+            "launchctl",
+            ["bootstrap", &domain, &path.to_string_lossy()],
+        ))
+    }
+
+    fn disable(&self, label: &ServiceLabel) -> Result<ServiceAction> {
+        let qualified = label.to_qualified_name();
+        let domain = self.domain_target();
+        let service_target = format!("{}/{}", domain, qualified);
+        Ok(ServiceAction::new().cmd_ignore_error("launchctl", ["bootout", &service_target]))
+    }
+
     fn status(&self, label: &ServiceLabel) -> Result<ServiceAction> {
         let qualified = label.to_qualified_name();
         let domain = self.domain_target();

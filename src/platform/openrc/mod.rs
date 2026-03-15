@@ -65,6 +65,16 @@ impl ServiceManager for OpenRcServiceManager {
         Ok(ServiceAction::new().cmd("rc-service", [&*script_name, "stop"]))
     }
 
+    fn enable(&self, label: &ServiceLabel) -> Result<ServiceAction> {
+        let script_name = label.to_script_name();
+        Ok(ServiceAction::new().cmd("rc-update", ["add", &*script_name, "default"]))
+    }
+
+    fn disable(&self, label: &ServiceLabel) -> Result<ServiceAction> {
+        let script_name = label.to_script_name();
+        Ok(ServiceAction::new().cmd("rc-update", ["del", &*script_name, "default"]))
+    }
+
     fn status(&self, label: &ServiceLabel) -> Result<ServiceAction> {
         let script_name = label.to_script_name();
         Ok(ServiceAction::new()
