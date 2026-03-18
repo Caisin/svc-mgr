@@ -40,7 +40,6 @@ impl ServiceManager for WinSwServiceManager {
         Ok(which::which("winsw").is_ok() || which::which("winsw.exe").is_ok())
     }
 
-    #[cfg(target_os = "windows")]
     fn install(&self, config: &ServiceConfig) -> Result<ServiceAction> {
         let path = self.xml_path(&config.label);
         let data = if let Some(contents) = &config.contents {
@@ -52,11 +51,6 @@ impl ServiceManager for WinSwServiceManager {
         Ok(ServiceAction::new()
             .write_file(&path, data.into_bytes(), 0o644)
             .cmd("winsw", ["install", &path.to_string_lossy()]))
-    }
-
-    #[cfg(not(target_os = "windows"))]
-    fn install(&self, _config: &ServiceConfig) -> Result<ServiceAction> {
-        Err(Error::Unsupported("WinSW is only available on Windows".into()))
     }
 
     fn uninstall(&self, label: &ServiceLabel) -> Result<ServiceAction> {

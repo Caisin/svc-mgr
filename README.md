@@ -8,8 +8,9 @@
 - 操作方法返回 `ServiceAction`，支持 `.exec()` 执行或 `.commands()` 预览命令
 - 每个平台都有类型化的服务文件结构体（`LaunchdPlist`、`SystemdUnit` 等），支持 `from_config()` + `render()`
 - 链式 `ServiceBuilder` API，快速构建服务配置
-- `TypedServiceManager` 自动分发到当前平台的后端
-- `ServiceManagerKind::native()` 自动检测当前系统的服务管理器
+- `TypedServiceManager::target(...)` 可显式选择任意后端，用于远程命令/动作生成
+- `TypedServiceManager::native()` / `ServiceManagerKind::native()` 仅用于当前机器的本机后端探测
+- `probe` 模块提供基于命令回调的 init system / package manager 探测，可复用于 SSH 远端探测
 - 支持 System / User 两种服务级别（launchd、systemd）
 - 灵活的重启策略：Never / Always / OnFailure / OnSuccess
 
@@ -91,10 +92,10 @@ let config = ServiceConfig {
 ```rust
 use svc_mgr::{ServiceManagerKind, TypedServiceManager};
 
-// 指定使用 systemd
+// 指定目标后端，可用于为远程机器生成动作
 let manager = TypedServiceManager::target(ServiceManagerKind::Systemd)?;
 
-// 或自动检测
+// 或仅在当前机器上自动检测本机后端
 let manager = TypedServiceManager::native()?;
 ```
 
@@ -149,6 +150,8 @@ cargo run --features cli --bin rsvc -- --help
 ```
 
 默认不启用 CLI 依赖；作为库使用时不会额外引入 `clap` / `env_logger`。
+
+`rsvc --backend <name>` 会直接选择目标 backend 生成动作，不受当前开发机操作系统限制；只有省略 `--backend` 时才会走本机 `native()` 自动探测。
 
 ## 平台支持
 

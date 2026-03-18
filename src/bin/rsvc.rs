@@ -39,13 +39,17 @@ fn open_editor(path: &str) -> svc_mgr::Result<()> {
 }
 
 #[derive(Parser)]
-#[command(name = "rsvc", about = "Cross-platform service management CLI")]
+#[command(
+    name = "rsvc",
+    about = "Cross-platform service management CLI",
+    long_about = "Cross-platform service management CLI.\n\nUse --backend to generate actions for a specific target backend, including remote targets on another OS. If --backend is omitted, rsvc falls back to native backend detection on the current machine."
+)]
 struct Cli {
     /// Manage user-level services instead of system-level
     #[arg(long, global = true)]
     user: bool,
 
-    /// Specify backend (default: auto-detect)
+    /// Target backend for action generation; omit to detect the native backend on this machine
     #[arg(long, value_enum, global = true)]
     backend: Option<Backend>,
 

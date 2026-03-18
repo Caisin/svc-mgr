@@ -1,31 +1,20 @@
 use crate::action::ServiceAction;
 use crate::error::Result;
 use crate::kind::ServiceManagerKind;
-use crate::{Error, ServiceConfig, ServiceLabel, ServiceLevel, ServiceManager};
+use crate::{ServiceConfig, ServiceLabel, ServiceLevel, ServiceManager};
 
 /// A service manager that dispatches to the appropriate platform backend.
 pub enum TypedServiceManager {
-    #[cfg(target_os = "macos")]
     Launchd(crate::platform::launchd::LaunchdServiceManager),
 
-    #[cfg(target_os = "linux")]
     Systemd(crate::platform::systemd::SystemdServiceManager),
 
-    #[cfg(target_os = "linux")]
     OpenRc(crate::platform::openrc::OpenRcServiceManager),
 
-    #[cfg(any(
-        target_os = "freebsd",
-        target_os = "dragonfly",
-        target_os = "openbsd",
-        target_os = "netbsd"
-    ))]
     Rcd(crate::platform::rcd::RcdServiceManager),
 
-    #[cfg(target_os = "windows")]
     Sc(crate::platform::sc::ScServiceManager),
 
-    #[cfg(target_os = "windows")]
     WinSw(crate::platform::winsw::WinSwServiceManager),
 }
 
@@ -33,39 +22,24 @@ impl TypedServiceManager {
     /// Create a manager for the given kind.
     pub fn target(kind: ServiceManagerKind) -> Result<Self> {
         match kind {
-            #[cfg(target_os = "macos")]
             ServiceManagerKind::Launchd => Ok(Self::Launchd(
                 crate::platform::launchd::LaunchdServiceManager::system(),
             )),
-            #[cfg(target_os = "linux")]
             ServiceManagerKind::Systemd => Ok(Self::Systemd(
                 crate::platform::systemd::SystemdServiceManager::system(),
             )),
-            #[cfg(target_os = "linux")]
             ServiceManagerKind::OpenRc => {
                 Ok(Self::OpenRc(crate::platform::openrc::OpenRcServiceManager::new()))
             }
-            #[cfg(any(
-                target_os = "freebsd",
-                target_os = "dragonfly",
-                target_os = "openbsd",
-                target_os = "netbsd"
-            ))]
             ServiceManagerKind::Rcd => {
                 Ok(Self::Rcd(crate::platform::rcd::RcdServiceManager::new()))
             }
-            #[cfg(target_os = "windows")]
             ServiceManagerKind::Sc => {
                 Ok(Self::Sc(crate::platform::sc::ScServiceManager::new()))
             }
-            #[cfg(target_os = "windows")]
             ServiceManagerKind::WinSw => Ok(Self::WinSw(
                 crate::platform::winsw::WinSwServiceManager::new(),
             )),
-            _ => Err(Error::Unsupported(format!(
-                "service manager kind {:?} is not supported on this platform",
-                kind
-            ))),
         }
     }
 
@@ -79,22 +53,11 @@ impl TypedServiceManager {
 macro_rules! dispatch {
     ($self:expr, $method:ident $(, $arg:expr)*) => {
         match $self {
-            #[cfg(target_os = "macos")]
             TypedServiceManager::Launchd(m) => m.$method($($arg),*),
-            #[cfg(target_os = "linux")]
             TypedServiceManager::Systemd(m) => m.$method($($arg),*),
-            #[cfg(target_os = "linux")]
             TypedServiceManager::OpenRc(m) => m.$method($($arg),*),
-            #[cfg(any(
-                target_os = "freebsd",
-                target_os = "dragonfly",
-                target_os = "openbsd",
-                target_os = "netbsd"
-            ))]
             TypedServiceManager::Rcd(m) => m.$method($($arg),*),
-            #[cfg(target_os = "windows")]
             TypedServiceManager::Sc(m) => m.$method($($arg),*),
-            #[cfg(target_os = "windows")]
             TypedServiceManager::WinSw(m) => m.$method($($arg),*),
         }
     };
@@ -103,22 +66,11 @@ macro_rules! dispatch {
 macro_rules! dispatch_mut {
     ($self:expr, $method:ident $(, $arg:expr)*) => {
         match $self {
-            #[cfg(target_os = "macos")]
             TypedServiceManager::Launchd(m) => m.$method($($arg),*),
-            #[cfg(target_os = "linux")]
             TypedServiceManager::Systemd(m) => m.$method($($arg),*),
-            #[cfg(target_os = "linux")]
             TypedServiceManager::OpenRc(m) => m.$method($($arg),*),
-            #[cfg(any(
-                target_os = "freebsd",
-                target_os = "dragonfly",
-                target_os = "openbsd",
-                target_os = "netbsd"
-            ))]
             TypedServiceManager::Rcd(m) => m.$method($($arg),*),
-            #[cfg(target_os = "windows")]
             TypedServiceManager::Sc(m) => m.$method($($arg),*),
-            #[cfg(target_os = "windows")]
             TypedServiceManager::WinSw(m) => m.$method($($arg),*),
         }
     };
@@ -175,5 +127,74 @@ impl ServiceManager for TypedServiceManager {
 
     fn set_level(&mut self, level: ServiceLevel) -> Result<()> {
         dispatch_mut!(self, set_level, level)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::TypedServiceManager;
+    use crate::{
+        RestartPolicy, ServiceConfig, ServiceLabel, ServiceManager, ServiceManagerKind,
+    };
+    use std::path::PathBuf;
+
+    fn sample_config(label: &str) -> ServiceConfig {
+        ServiceConfig {
+            label: ServiceLabel::new(label),
+            program: PathBuf::from("/usr/bin/demo"),
+            args: Vec::new(),
+            working_directory: None,
+            environment: Vec::new(),
+            username: None,
+            description: Some("demo".to_string()),
+            autostart: true,
+            restart_policy: RestartPolicy::default(),
+            stdout_file: None,
+            stderr_file: None,
+            contents: None,
+        }
+    }
+
+    #[test]
+    fn test_target_systemd_available_for_remote_command_generation() {
+        let manager = TypedServiceManager::target(ServiceManagerKind::Systemd).unwrap();
+        let action = manager.status(&ServiceLabel::new("demo")).unwrap();
+        let commands = action.commands();
+        assert_eq!(commands.len(), 1);
+        assert!(commands[0].contains("systemctl status demo"));
+    }
+
+    #[test]
+    fn test_target_openrc_available_for_remote_command_generation() {
+        let manager = TypedServiceManager::target(ServiceManagerKind::OpenRc).unwrap();
+        let action = manager.restart(&ServiceLabel::new("demo")).unwrap();
+        let commands = action.commands();
+        assert_eq!(commands.len(), 2);
+        assert!(commands[0].contains("rc-service demo stop"));
+        assert!(commands[1].contains("rc-service demo start"));
+    }
+
+    #[test]
+    fn test_target_other_platform_managers_available_for_remote_command_generation() {
+        TypedServiceManager::target(ServiceManagerKind::Launchd).unwrap();
+        TypedServiceManager::target(ServiceManagerKind::Rcd).unwrap();
+        TypedServiceManager::target(ServiceManagerKind::Sc).unwrap();
+        TypedServiceManager::target(ServiceManagerKind::WinSw).unwrap();
+    }
+
+    #[test]
+    fn test_target_launchd_install_generates_launchctl_commands() {
+        let manager = TypedServiceManager::target(ServiceManagerKind::Launchd).unwrap();
+        let action = manager.install(&sample_config("com.example.demo")).unwrap();
+        let commands = action.commands();
+        assert!(commands.iter().any(|cmd| cmd.contains("launchctl")));
+    }
+
+    #[test]
+    fn test_target_winsw_install_generates_winsw_commands() {
+        let manager = TypedServiceManager::target(ServiceManagerKind::WinSw).unwrap();
+        let action = manager.install(&sample_config("demo")).unwrap();
+        let commands = action.commands();
+        assert!(commands.iter().any(|cmd| cmd.contains("winsw")));
     }
 }

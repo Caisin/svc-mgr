@@ -101,7 +101,6 @@ impl WinSwXmlDef {
     }
 
     /// Render to WinSW XML format using quick-xml.
-    #[cfg(target_os = "windows")]
     pub fn render(&self) -> crate::Result<String> {
         use quick_xml::events::{BytesEnd, BytesStart, BytesText, Event};
         use quick_xml::Writer;

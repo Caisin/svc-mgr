@@ -59,9 +59,11 @@ Every `ServiceManager` trait method returns `ServiceAction` — not immediate re
 
 `ServiceAction` holds a list of `ActionStep`s (WriteFile/RemoveFile/Cmd/CmdIgnoreError) and an optional output parser closure.
 
+`probe.rs` contains callback-based host detection helpers for remote scenarios. Keep probe helpers transport-agnostic: they should accept command-execution callbacks and return typed detection results, rather than depending on SSH or any app-specific runtime.
+
 ### Type Dispatch
 
-`TypedServiceManager` is a compile-time `cfg`-gated enum dispatching to platform backends via `dispatch!`/`dispatch_mut!` macros in `typed.rs`. Each backend lives under `src/platform/<name>/` with a manager struct + typed config builder (e.g., `SystemdUnit`, `LaunchdPlist`).
+`TypedServiceManager` dispatches to all platform backends via `dispatch!`/`dispatch_mut!` macros in `typed.rs`. `target(kind)` is for explicit target backend selection, including remote action generation across OS boundaries. `native()` is the only API that should depend on the current machine's OS. Each backend lives under `src/platform/<name>/` with a manager struct + typed config builder (e.g., `SystemdUnit`, `LaunchdPlist`).
 
 ### Platform Backends
 
@@ -85,7 +87,7 @@ Each backend's `from_config()` + `render()` generates the platform service file.
 - Use Chinese for commit messages and documentation when the user communicates in Chinese
 - Push `master` to remote `main`: `git push origin master:main`
 - Crate name: `svc-mgr`, binary name: `rsvc`, Rust import: `svc_mgr`
-- Adding a new platform backend: create `src/platform/<name>/mod.rs` + config struct, implement `ServiceManager`, add variant to `TypedServiceManager` and both dispatch macros with appropriate `#[cfg]` gates
+- Adding a new platform backend: create `src/platform/<name>/mod.rs` + config struct, implement `ServiceManager`, add variant to `TypedServiceManager` and both dispatch macros. Prefer keeping the backend available cross-platform for remote action generation; reserve OS-specific behavior for `native()` or true platform-only APIs.
 - Integration tests go in `tests/`, grouped by platform with `#[cfg(target_os)]` gates
 
 ## Pre-Commit Checklist

@@ -5,6 +5,7 @@ pub mod error;
 pub mod kind;
 pub mod label;
 pub mod platform;
+pub mod probe;
 pub mod typed;
 pub mod utils;
 
@@ -19,6 +20,7 @@ pub use builder::ServiceBuilder;
 pub use error::{Error, Result};
 pub use kind::ServiceManagerKind;
 pub use label::ServiceLabel;
+pub use probe::{CommandProbeOutput, PackageManagerKind, detect_init_system_with, detect_package_manager_with};
 pub use typed::TypedServiceManager;
 
 /// The level at which a service is managed.

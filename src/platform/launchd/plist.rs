@@ -71,7 +71,6 @@ impl LaunchdPlist {
     }
 
     /// Render to plist XML using the `plist` crate.
-    #[cfg(target_os = "macos")]
     pub fn render(&self) -> crate::Result<Vec<u8>> {
         use plist::{Dictionary, Value};
 

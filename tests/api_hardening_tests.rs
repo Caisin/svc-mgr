@@ -90,29 +90,12 @@ fn read_dir_exec_defers_listing_until_exec() {
     fs::remove_dir_all(dir).unwrap();
 }
 
-#[cfg(target_os = "macos")]
 #[test]
-fn target_rejects_unsupported_backend() {
-    assert!(matches!(
-        TypedServiceManager::target(ServiceManagerKind::Systemd),
-        Err(Error::Unsupported(msg)) if msg.contains("Systemd")
-    ));
-}
-
-#[cfg(target_os = "linux")]
-#[test]
-fn target_rejects_unsupported_backend() {
-    assert!(matches!(
-        TypedServiceManager::target(ServiceManagerKind::Launchd),
-        Err(Error::Unsupported(msg)) if msg.contains("Launchd")
-    ));
-}
-
-#[cfg(target_os = "windows")]
-#[test]
-fn target_rejects_unsupported_backend() {
-    assert!(matches!(
-        TypedServiceManager::target(ServiceManagerKind::Launchd),
-        Err(Error::Unsupported(msg)) if msg.contains("Launchd")
-    ));
+fn target_allows_cross_platform_backend_selection() {
+    assert!(TypedServiceManager::target(ServiceManagerKind::Launchd).is_ok());
+    assert!(TypedServiceManager::target(ServiceManagerKind::Systemd).is_ok());
+    assert!(TypedServiceManager::target(ServiceManagerKind::OpenRc).is_ok());
+    assert!(TypedServiceManager::target(ServiceManagerKind::Rcd).is_ok());
+    assert!(TypedServiceManager::target(ServiceManagerKind::Sc).is_ok());
+    assert!(TypedServiceManager::target(ServiceManagerKind::WinSw).is_ok());
 }
